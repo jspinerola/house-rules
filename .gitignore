@@ -1,0 +1,28 @@
+# Workshop reference clone (see scripts/setup_reference.sh)
+reference/
+
+# Secrets
+.env
+.env.local
+*.pem
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Node
+node_modules/
+.next/
+dist/
+.expo/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
