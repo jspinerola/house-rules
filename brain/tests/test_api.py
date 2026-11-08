@@ -313,3 +313,17 @@ def test_api_imports_only_registry(name):
         elif isinstance(node, ast.Import):
             for a in node.names:
                 assert not a.name.startswith("app."), f"{name} imports {a.name} directly"
+
+
+def test_live_nessie_is_seeded_on_startup(monkeypatch):
+    """A fresh live-Nessie brain must not 500 on /state: startup reseeds (like /demo/reset)."""
+    from fastapi.testclient import TestClient
+
+    from app import demo, main
+
+    calls = []
+    monkeypatch.setattr(main.registry, "mode", lambda name: "live" if name == "nessie" else "stub")
+    monkeypatch.setattr(demo, "reset", lambda: calls.append("reset"))
+    with TestClient(main.app):
+        pass
+    assert calls == ["reset"]
