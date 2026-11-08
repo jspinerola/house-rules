@@ -60,7 +60,7 @@ def speak(agent: str, flow: str, draft: str, allowed: set[float], audience: str,
         text = llm.chat(messages).text.strip()
         result = auditor.check(text, allowed, audience)
         if result.ok and text:
-            trace.log(agent, "replied", f"to {audience}: {text[:80]}")
+            trace.log(agent, "replied", f"to {audience}: {text if audience == 'group' else text[:80]}")  # group text is public
             return text
         messages += [{"role": "assistant", "content": text},
                      {"role": "user", "content": "The auditor blocked that: " + "; ".join(result.reasons)

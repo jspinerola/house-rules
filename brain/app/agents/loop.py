@@ -136,7 +136,7 @@ def checked(agent: str, out: Outcome, audience: str, extra_allowed: set[float] =
     for attempt in range(2):
         res = auditor.check(text, allowed, audience)
         if res.ok:
-            trace.log(agent, "replied", f"to {audience}: {text[:80]}")
+            trace.log(agent, "replied", f"to {audience}: {text if audience == 'group' else text[:80]}")  # group text is public
             return text
         if attempt == 1:
             break
