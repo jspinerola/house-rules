@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
@@ -23,7 +24,19 @@ load_dotenv(ROOT / ".env")  # never overrides variables already set in the envir
 
 log = logging.getLogger("brain")
 
-app = FastAPI(title="House Rules brain")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    # The live Nessie client keeps account ids and the cents ledger in memory, so a fresh brain
+    # can't answer anything until Nessie is seeded. Reseed on startup so the demo is usable
+    # right away (same as POST /demo/reset: store and Nessie start from the scenario together).
+    if registry.mode("nessie") == "live":
+        log.warning("NESSIE_MODE=live: seeding Nessie and resetting the demo on startup")
+        demo.reset()
+    yield
+
+
+app = FastAPI(title="House Rules brain", lifespan=lifespan)
 
 # Unhandled module errors -> HTTP status. Anything else is a 500.
 ERROR_STATUS: list[tuple[type[BaseException], int]] = [
