@@ -71,9 +71,17 @@ def _scenario() -> Scenario:
 
 
 class _FakeNessie:
-    """Minimal stateful Nessie sandbox for MockTransport."""
+    """Minimal stateful Nessie sandbox for MockTransport.
+
+    Mirrors real-sandbox quirks seen at I4: account balances are stored as whole-dollar ints,
+    PUT cannot change a balance, and TransferCreate rejects extra fields such as payee_id.
+    """
+
+    TRANSFER_FIELDS = {"transaction_date", "status", "amount", "description"}
 
     def __init__(self) -> None:
+        self.calls: list[tuple[str, str, int, dict | None]] = []
+        self.fail_delete_once = False
         self.customers: dict[str, dict] = {}
         self.accounts: dict[str, dict] = {}
         self.deposits: dict[str, list[dict]] = {}
@@ -91,6 +99,15 @@ class _FakeNessie:
         return f"id-{self._n:04d}"
 
     def handler(self, request: httpx.Request) -> httpx.Response:
+        resp = self._handle(request)
+        self.calls.append((request.method.upper(), request.url.path, resp.status_code,
+                           json.loads(request.content.decode() or "null")))
+        return resp
+
+    def count(self, method: str | None = None) -> int:
+        return sum(1 for m, *_ in self.calls if method in (None, m))
+
+    def _handle(self, request: httpx.Request) -> httpx.Response:
         assert request.url.params.get("key") == API_KEY
         path = request.url.path
         method = request.method.upper()
@@ -107,11 +124,16 @@ class _FakeNessie:
             cid = self._id()
             self.customers[cid] = {"_id": cid, **body}
             return httpx.Response(201, json={"objectCreated": self.customers[cid]})
+        if method == "GET" and path == "/customers":
+            return httpx.Response(200, json=list(self.customers.values()))
+        if method == "GET" and path == "/accounts":
+            return httpx.Response(200, json=list(self.accounts.values()))
 
         m = re.fullmatch(r"/customers/([^/]+)/accounts", path)
         if method == "POST" and m:
             aid = self._id()
-            acct = {"_id": aid, "customer_id": m.group(1), "balance": float(body.get("balance", 0)), **body}
+            # Real sandbox truncates balance to an int.
+            acct = {"_id": aid, "customer_id": m.group(1), **body, "balance": int(body.get("balance", 0))}
             self.accounts[aid] = acct
             self.deposits.setdefault(aid, [])
             self.transfers.setdefault(aid, [])
@@ -121,7 +143,10 @@ class _FakeNessie:
 
         m = re.fullmatch(r"/accounts/([^/]+)", path)
         if method == "DELETE" and m:
-            self.accounts.pop(m.group(1), None)
+            if self.fail_delete_once:
+                self.fail_delete_once = False
+                return httpx.Response(400, text="cannot delete")
+            self.accounts.pop(m.group(1), None)  # real sandbox: 200 even if already gone
             return httpx.Response(200, json={"message": "deleted"})
         if method == "GET" and m:
             return httpx.Response(200, json=self.accounts[m.group(1)])
@@ -142,13 +167,15 @@ class _FakeNessie:
             aid = m.group(1)
             if method == "GET":
                 return httpx.Response(200, json=self.transfers.get(aid, []))
+            extra = sorted(set(body) - self.TRANSFER_FIELDS)
+            if extra:
+                return httpx.Response(400, text=f"1 validation error for TransferCreate\n{extra[0]}\n"
+                                                "  extra fields not permitted (type=value_error.extra)")
             tid = self._id()
-            xfer = {"_id": tid, "payer_id": aid, "payee_id": body["payee_id"], "amount": body["amount"],
+            xfer = {"_id": tid, "payer_id": aid, "amount": body["amount"],
                     "description": body.get("description", ""), "status": body.get("status", "pending"),
-                    "transaction_date": "2026-11-28"}
+                    "transaction_date": body.get("transaction_date", "2026-11-28")}
             self.transfers.setdefault(aid, []).append(xfer)
-            if "payee_id" in body:
-                self.transfers.setdefault(body["payee_id"], []).append(xfer)
             return httpx.Response(201, json={"objectCreated": xfer})
 
         m = re.fullmatch(r"/transfers/([^/]+)", path)
@@ -231,22 +258,23 @@ def test_live_seed_creates_customer_account_deposit():
 def test_live_transfer_posts_and_moves_balances():
     n, fake = _live()
     n.seed(_scenario())
-    alex_before, sam_before = n._accounts["alex"], n._accounts["sam"]
+    sam_before = n._accounts["sam"]
     tid = n.transfer("sam", "alex", 800, "rent share")
     assert tid
     assert n.balance("sam") == 1800 and n.balance("alex") == 5000
     # Transfer was posted against the pre-recreate sam account id.
     posted = next(x for xs in fake.transfers.values() for x in xs if x["_id"] == tid)
-    assert posted["payer_id"] == sam_before and posted["payee_id"] == alex_before
-    assert posted["status"] in ("pending", "completed")
+    assert posted["payer_id"] == sam_before and posted["status"] == "completed"
+    assert fake.accounts[n._accounts["sam"]]["balance"] == 1800
+    assert fake.accounts[n._accounts["alex"]]["balance"] == 5000
 
 
 def test_live_retry_once_on_5xx():
     n, fake = _live()
     n.seed(_scenario())
-    alex = n._accounts["alex"]
-    fake.fail_5xx_once_paths.add(f"/accounts/{alex}")
-    assert n.balance("alex") == 4200  # retried successfully
+    fake.fail_5xx_once_paths.add(f"/accounts/{n._accounts['sam']}/transfers")
+    assert n.transfer("sam", "alex", 800, "rent share")  # retried successfully
+    assert n.balance("sam") == 1800
 
 
 def test_live_persistent_5xx_raises_nessie_error():
@@ -254,7 +282,8 @@ def test_live_persistent_5xx_raises_nessie_error():
     n.seed(_scenario())
     fake.always_5xx = True
     with pytest.raises(NessieError, match="503"):
-        n.balance("alex")
+        n.deposit("jordan", 1350, "Payroll deposit")
+    assert n.balance("jordan") == 310  # ledger unchanged when the post fails
 
 
 def test_live_4xx_raises_without_leaking_api_key():
@@ -281,3 +310,98 @@ def test_live_pay_bill_and_purchase():
     n.pay_bill("alex", "Maple Court Apartments", 2400, "2026-11-28")
     n.purchase("alex", "Couch Co.", 1200, "couch")
     assert n.balance("alex") == 600  # 4200 - 2400 - 1200
+
+
+# ----- I4 findings: cents, payee_id, reseed, call budget, logged swallows -----
+
+def _sandbox_balances(n: LiveNessie, fake: _FakeNessie) -> dict[str, int]:
+    return {rid: fake.accounts[aid]["balance"] for rid, aid in n._accounts.items()}
+
+
+def test_live_cents_survive_couch_sequence():
+    n, fake = _live()
+    n.seed(_scenario())
+    n.purchase("alex", "Couch Co.", 1200, "couch")
+    n.transfer("sam", "alex", 133.33, "couch")
+    n.transfer("jordan", "alex", 133.33, "couch")
+    assert (n.balance("alex"), n.balance("sam"), n.balance("jordan")) == (3266.66, 2466.67, 176.67)
+    # The sandbox only holds whole dollars; it shows the floor of the exact ledger.
+    assert _sandbox_balances(n, fake) == {"alex": 3266, "sam": 2466, "jordan": 176}
+
+
+def test_live_negative_balance_floors_in_sandbox():
+    n, fake = _live()
+    n.seed(_scenario())
+    n.transfer("jordan", "alex", 800.5, "rent")
+    assert n.balance("jordan") == -490.5
+    assert _sandbox_balances(n, fake)["jordan"] == -491
+
+
+def test_live_transfer_never_sends_payee_id():
+    n, fake = _live()
+    n.seed(_scenario())
+    n.transfer("sam", "alex", 800, "rent share")
+    assert [c for c in fake.calls if c[2] >= 400] == []
+    assert not any(isinstance(b, dict) and "payee_id" in b for *_, b in fake.calls)
+
+
+def test_live_transfer_call_budget():
+    n, fake = _live()
+    n.seed(_scenario())
+    before = len(fake.calls)
+    n.transfer("sam", "alex", 800, "rent share")
+    made = fake.calls[before:]
+    assert len(made) <= 5, made
+    assert not any(m in ("GET", "PUT") for m, *_ in made), made
+
+
+def test_live_bill_purchase_deposit_skip_reads_and_puts():
+    n, fake = _live()
+    n.seed(_scenario())
+    n.purchase("alex", "Couch Co.", 1, "warm merchant cache")
+    before = len(fake.calls)
+    n.pay_bill("alex", "Maple Court Apartments", 2400, "2026-11-28")
+    n.purchase("alex", "Couch Co.", 1200, "couch")
+    n.deposit("jordan", 1350, "Payroll deposit")
+    made = fake.calls[before:]
+    assert not any(m in ("GET", "PUT") for m, *_ in made), made
+    assert len(made) == 9  # 3 x (POST object + DELETE + POST account)
+
+
+def test_live_reseed_reuses_customers_one_account_each():
+    n, fake = _live()
+    n.seed(_scenario())
+    n.transfer("sam", "alex", 800, "rent share")
+    n.seed(_scenario())
+    n.seed(_scenario())
+    assert len(fake.customers) == 3
+    per_customer: dict[str, int] = {}
+    for a in fake.accounts.values():
+        per_customer[a["customer_id"]] = per_customer.get(a["customer_id"], 0) + 1
+    assert sorted(per_customer.values()) == [1, 1, 1]
+    assert (n.balance("alex"), n.balance("sam"), n.balance("jordan")) == (4200, 2600, 310)
+    assert _sandbox_balances(n, fake) == {"alex": 4200, "sam": 2600, "jordan": 310}
+    assert n.transactions("alex") == []
+
+
+def test_live_reseed_leaves_other_customers_alone():
+    n, fake = _live()
+    fake.customers["other"] = {"_id": "other", "first_name": "Alex", "last_name": "Roommate",
+                               "address": {"street_name": "Elm Street"}}
+    fake.accounts["other-acct"] = {"_id": "other-acct", "customer_id": "other", "balance": 99}
+    n.seed(_scenario())
+    n.seed(_scenario())
+    assert fake.accounts["other-acct"]["balance"] == 99
+    assert n._customers["alex"] != "other"
+
+
+def test_live_swallowed_delete_failure_is_logged(caplog):
+    n, fake = _live()
+    n.seed(_scenario())
+    fake.fail_delete_once = True
+    with caplog.at_level("WARNING", logger="brain.nessie"):
+        n.transfer("sam", "alex", 800, "rent share")
+    assert n.balance("sam") == 1800  # the recreated account still carries the balance
+    msgs = [r.getMessage() for r in caplog.records if r.name == "brain.nessie"]
+    assert any("DELETE /accounts/" in m and "400" in m for m in msgs), msgs
+    assert not any(API_KEY in m for m in msgs)

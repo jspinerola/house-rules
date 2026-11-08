@@ -36,3 +36,11 @@ def test_nessie_contract(use, mode):
     assert newest.date and newest.amount in (-2400, -1200, 800)
     dates = [t.date for t in n.transactions("alex")]
     assert dates == sorted(dates, reverse=True)
+
+    if mode == "live":
+        # Cents survive in the ledger; the sandbox account shows the floored dollars.
+        n.transfer("sam", "alex", 133.33, "couch")
+        assert (n.balance("alex"), n.balance("sam")) == (1533.33, 1666.67)
+        for rid in ("alex", "sam", "jordan"):
+            live = n._request("GET", f"/accounts/{n._accounts[rid]}")["balance"]
+            assert live == int(n.balance(rid) // 1), (rid, live, n.balance(rid))
