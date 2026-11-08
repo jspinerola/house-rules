@@ -26,9 +26,11 @@ The foundation commit and P0 skeleton are merged to `main` (PR #2, CI green).
 | M1 Store | P0 done (sqlite); Tiger Data open |
 | M2 Indicators, M3 Tools, M4 Proposals, M5 Auditor | P0 skeleton done; hardening open |
 | M7 Personal agent, M8 House agent | P0 skeleton done (code + stub wording); Grok open |
-| M10 Treasurer, M11 Brain API | P0 done |
+| M10 Treasurer | P0 done |
+| M11 Brain API | Done: route shape tests, JSON errors, env CORS, `/health` modes (`m11-api`) |
 | M12 Gateway, M13 Bank app, M14 Dashboard | Sim mode and unstyled versions done |
-| M6 LLM (Grok), M9 Nessie live, M15 CI + Grok Bot, M16 Outbox http | Open |
+| M16 Outbox http | Done in brain (gateway down -> JSON 502); REPL check with the sim gateway open |
+| M6 LLM (Grok), M9 Nessie live, M15 CI + Grok Bot | Open |
 
 **What's still open, by person**
 
