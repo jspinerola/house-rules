@@ -78,40 +78,46 @@ house-rules/
 
 Folder owners and module contracts are in [AGENTS.md](./AGENTS.md).
 
-## Setup (local / mock)
+## Setup (local, everything stubbed)
 
-Prerequisites: Python 3.11+, Node 20 or Bun, pnpm (dashboard), Expo Go (bank app).
+Prerequisites: Python 3.11, Node 20+ (npm), Expo Go for the bank app.
 
 ```bash
-# once after clone — workshop reference (gitignored; not committed)
+# once after clone: workshop reference (gitignored; not committed)
 ./scripts/setup_reference.sh
+cp .env.example .env            # every <MODULE>_MODE=stub, GATEWAY_MODE=sim
 
-cp .env.example .env   # when available; start with mock modes
+cd brain && pip install -r requirements.txt     # also installs contracts/ (editable)
+cd .. && pytest                                 # contract tests + expected.json + e2e
 
-cd brain && pip install -r requirements.txt
-python -m app.seed
-uvicorn app.main:app --port 8000
-
-cd gateway && npm i && GATEWAY_MODE=sim npm run dev
-
-cd dashboard && pnpm i && pnpm dev
-
-cd bank-app && npx expo start --tunnel
+# terminal 1: brain (OUTBOX_MODE=http so proactive messages reach the sim gateway)
+cd brain && OUTBOX_MODE=http uvicorn app.main:app --port 8000
+# terminal 2: sim gateway REPL
+cd gateway && npm i && npm run dev
+# optional
+cd dashboard && npm i && npm run dev            # http://localhost:3000
+cd bank-app && npm i && EXPO_PUBLIC_BRAIN_URL=http://<laptop-ip>:8000 npx expo start --tunnel
 ```
 
-Default env for skeleton work:
+Rent day in the sim REPL:
 
-| Key | Value |
-| --- | --- |
-| `LLM_MODE` | `mock` |
-| `NESSIE_MODE` | `mock` |
-| `GATEWAY_MODE` | `sim` |
-| `DB_MODE` | `sqlite` |
-| `BRAIN_URL` | `http://localhost:8000` |
+```text
+/reset
+/trigger rent_due
+@alex yes
+@sam yes
+@jordan yes
+/advance 2026-12-16
+#group can we afford a $1,200 couch?
+```
 
-Sim gateway REPL: type `@alex yes` or `#group can we afford a couch?` — posts to the brain and prints replies by target.
+`@alex <text>` is a DM from Alex; `#group <text>` posts to the group as the last `@` sender (`@sam #group hi` to pick one).
 
-Acceptance path (once implemented): `POST /demo/reset` → trigger rent → three yeses → treasurer executes → `/demo/advance` for scheduled legs. See `brain/tests/test_e2e.py`.
+### Module flags
+
+Every module is reached through `brain/app/registry.py` and picks its implementation from `<MODULE>_MODE` (default `stub`): `DB_MODE` (`stub|sqlite|tiger`), `INDICATORS_MODE`, `TOOLS_MODE`, `PROPOSALS_MODE`, `AUDITOR_MODE`, `PERSONAL_MODE`, `HOUSE_MODE`, `TREASURER_MODE` (`stub|real`), `LLM_MODE` (`stub|grok`), `NESSIE_MODE` (`stub|live`), `OUTBOX_MODE` (`stub|http`), `GATEWAY_MODE` (`sim|photon`). `real` works for every flag. `tiger`, `live` and `photon` raise until they are built. `GET /health` shows every module's mode.
+
+`pytest` runs the e2e test twice: all stubs, and all real modules except Nessie, LLM and Outbox.
 
 ## Tracks (hackathon context)
 

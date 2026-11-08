@@ -2,6 +2,14 @@
 
 Guidance for humans and coding agents working in this repo. Prefer this file + frozen contracts over inventing new shapes.
 
+## Ground rules
+
+- Read `REQUIREMENTS.md` and `SPEC.md` before any change.
+- Only edit files in the module you were asked to work on. Never edit `contracts/` or `fixtures/` unless the task says "contract change".
+- Talk to other modules only through `contracts/interfaces.py` and the registry. If you need behavior another module lacks, extend its STUB, not its real code.
+- Done = the module's "Done when" passes + `pytest` green with all flags on stub.
+- Never put API keys in code; read them from env.
+
 ## What we're building
 
 House Rules is an AI roommate money manager in iMessage: split bills by house rules, time payments to payday, check group affordability without leaking balances, move money via Nessie after approvals.

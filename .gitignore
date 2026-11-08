@@ -26,3 +26,8 @@ dist/
 Thumbs.db
 .idea/
 .vscode/
+
+# Local SQLite
+brain/*.db
+*.tsbuildinfo
+next-env.d.ts.bak

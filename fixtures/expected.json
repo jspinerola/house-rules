@@ -1,0 +1,467 @@
+{
+ "rent_share": 800.0,
+ "split_bill": [
+  {
+   "bill_type": "rent",
+   "amount": 2400,
+   "expect": {
+    "shares": {
+     "alex": 800,
+     "sam": 800,
+     "jordan": 800
+    }
+   }
+  },
+  {
+   "bill_type": "electric",
+   "amount": 150,
+   "expect": {
+    "shares": {
+     "alex": 45,
+     "sam": 60,
+     "jordan": 45
+    }
+   }
+  }
+ ],
+ "can_cover": [
+  {
+   "roommate_id": "jordan",
+   "amount": 800,
+   "date": "2026-11-30",
+   "expect": {
+    "level": "no",
+    "earliest_date": "2026-12-15"
+   }
+  },
+  {
+   "roommate_id": "alex",
+   "amount": 800,
+   "date": "2026-11-30",
+   "expect": {
+    "level": "ok",
+    "earliest_date": null
+   }
+  },
+  {
+   "roommate_id": "sam",
+   "amount": 800,
+   "date": "2026-11-30",
+   "expect": {
+    "level": "ok",
+    "earliest_date": null
+   }
+  },
+  {
+   "roommate_id": "alex",
+   "amount": 400,
+   "date": "2026-11-28",
+   "expect": {
+    "level": "ok",
+    "earliest_date": null
+   }
+  },
+  {
+   "roommate_id": "sam",
+   "amount": 400,
+   "date": "2026-11-28",
+   "expect": {
+    "level": "ok",
+    "earliest_date": null
+   }
+  },
+  {
+   "roommate_id": "jordan",
+   "amount": 400,
+   "date": "2026-11-28",
+   "expect": {
+    "level": "no",
+    "earliest_date": "2026-12-15"
+   }
+  },
+  {
+   "roommate_id": "alex",
+   "amount": 133.33,
+   "date": "2026-11-28",
+   "expect": {
+    "level": "ok",
+    "earliest_date": null
+   }
+  },
+  {
+   "roommate_id": "sam",
+   "amount": 133.33,
+   "date": "2026-11-28",
+   "expect": {
+    "level": "ok",
+    "earliest_date": null
+   }
+  },
+  {
+   "roommate_id": "jordan",
+   "amount": 133.33,
+   "date": "2026-11-28",
+   "expect": {
+    "level": "tight",
+    "earliest_date": null
+   }
+  }
+ ],
+ "payday_plan": [
+  {
+   "roommate_id": "jordan",
+   "amount": 800,
+   "expect": {
+    "fronter": "alex",
+    "repay_date": "2026-12-16"
+   }
+  }
+ ],
+ "group_affordability": [
+  {
+   "item": "couch",
+   "price": 1200,
+   "expect": {
+    "answers": {
+     "alex": "ok",
+     "sam": "ok",
+     "jordan": "tight"
+    },
+    "plan": {
+     "months": 3,
+     "per_person_monthly": 133.33
+    }
+   }
+  }
+ ],
+ "next_payday": {
+  "alex": "2026-12-01",
+  "sam": "2026-12-05",
+  "jordan": "2026-12-15"
+ },
+ "indicators": {
+  "alex": {
+   "emergency_fund_months": {
+    "value": 2.4855,
+    "status": "risk",
+    "inputs": {}
+   },
+   "debt_to_income": {
+    "value": 0.0,
+    "status": "good",
+    "inputs": {}
+   },
+   "savings_rate": {
+    "value": 0.7087,
+    "status": "good",
+    "inputs": {}
+   },
+   "credit_utilization": {
+    "value": 0.15,
+    "status": "watch",
+    "inputs": {}
+   },
+   "net_worth": {
+    "value": 3000,
+    "status": "good",
+    "inputs": {}
+   },
+   "debt_to_asset": {
+    "value": 0.2857,
+    "status": "good",
+    "inputs": {}
+   },
+   "housing_cost_ratio": {
+    "value": 0.0,
+    "status": "good",
+    "inputs": {}
+   },
+   "liquidity_ratio": {
+    "value": 3.5,
+    "status": "good",
+    "inputs": {}
+   },
+   "runway_days": {
+    "value": 74.6,
+    "status": "good",
+    "inputs": {}
+   },
+   "rent_to_income": {
+    "value": 0.1379,
+    "status": "good",
+    "inputs": {}
+   },
+   "days_to_payday": {
+    "value": 3.0,
+    "status": "good",
+    "inputs": {}
+   },
+   "buffer_after": {
+    "value": 3400.0,
+    "status": "good",
+    "inputs": {
+     "amount": 800.0
+    }
+   }
+  },
+  "sam": {
+   "emergency_fund_months": {
+    "value": 1.7912,
+    "status": "risk",
+    "inputs": {}
+   },
+   "debt_to_income": {
+    "value": 0.0,
+    "status": "good",
+    "inputs": {}
+   },
+   "savings_rate": {
+    "value": 0.6474,
+    "status": "good",
+    "inputs": {}
+   },
+   "credit_utilization": {
+    "value": 0.2,
+    "status": "watch",
+    "inputs": {}
+   },
+   "net_worth": {
+    "value": 2000,
+    "status": "good",
+    "inputs": {}
+   },
+   "debt_to_asset": {
+    "value": 0.2308,
+    "status": "good",
+    "inputs": {}
+   },
+   "housing_cost_ratio": {
+    "value": 0.0,
+    "status": "good",
+    "inputs": {}
+   },
+   "liquidity_ratio": {
+    "value": 4.3333,
+    "status": "good",
+    "inputs": {}
+   },
+   "runway_days": {
+    "value": 53.7,
+    "status": "good",
+    "inputs": {}
+   },
+   "rent_to_income": {
+    "value": 0.1943,
+    "status": "good",
+    "inputs": {}
+   },
+   "days_to_payday": {
+    "value": 7.0,
+    "status": "good",
+    "inputs": {}
+   },
+   "buffer_after": {
+    "value": 1800.0,
+    "status": "good",
+    "inputs": {
+     "amount": 800.0
+    }
+   }
+  },
+  "jordan": {
+   "emergency_fund_months": {
+    "value": 0.234,
+    "status": "risk",
+    "inputs": {}
+   },
+   "debt_to_income": {
+    "value": 0.0,
+    "status": "good",
+    "inputs": {}
+   },
+   "savings_rate": {
+    "value": 0.2429,
+    "status": "good",
+    "inputs": {}
+   },
+   "credit_utilization": {
+    "value": 0.45,
+    "status": "risk",
+    "inputs": {}
+   },
+   "net_worth": {
+    "value": -140,
+    "status": "risk",
+    "inputs": {}
+   },
+   "debt_to_asset": {
+    "value": 1.4516,
+    "status": "risk",
+    "inputs": {}
+   },
+   "housing_cost_ratio": {
+    "value": 0.0,
+    "status": "good",
+    "inputs": {}
+   },
+   "liquidity_ratio": {
+    "value": 0.6889,
+    "status": "good",
+    "inputs": {}
+   },
+   "runway_days": {
+    "value": 7.0,
+    "status": "risk",
+    "inputs": {}
+   },
+   "rent_to_income": {
+    "value": 0.4571,
+    "status": "risk",
+    "inputs": {}
+   },
+   "days_to_payday": {
+    "value": 17.0,
+    "status": "risk",
+    "inputs": {}
+   },
+   "buffer_after": {
+    "value": -490.0,
+    "status": "risk",
+    "inputs": {
+     "amount": 800.0
+    }
+   }
+  }
+ },
+ "proposals": {
+  "rent": {
+   "flow": "rent",
+   "title": "Rent for December",
+   "required_approvers": [
+    "alex",
+    "sam",
+    "jordan"
+   ],
+   "legs": [
+    {
+     "type": "transfer",
+     "from": "sam",
+     "to": "alex",
+     "payee": null,
+     "amount": 800,
+     "date": "2026-11-28",
+     "status": "pending",
+     "nessie_id": null
+    },
+    {
+     "type": "bill_payment",
+     "from": "alex",
+     "to": null,
+     "payee": "Maple Court Apartments",
+     "amount": 2400,
+     "date": "2026-11-28",
+     "status": "pending",
+     "nessie_id": null
+    },
+    {
+     "type": "scheduled_transfer",
+     "from": "jordan",
+     "to": "alex",
+     "payee": null,
+     "amount": 800,
+     "date": "2026-12-16",
+     "status": "pending",
+     "nessie_id": null
+    }
+   ]
+  },
+  "couch": {
+   "flow": "purchase",
+   "title": "Couch from Couch Co.",
+   "required_approvers": [
+    "alex",
+    "sam",
+    "jordan"
+   ],
+   "legs": [
+    {
+     "type": "purchase",
+     "from": "alex",
+     "to": null,
+     "payee": "Couch Co.",
+     "amount": 1200,
+     "date": "2026-11-28",
+     "status": "pending",
+     "nessie_id": null
+    },
+    {
+     "type": "scheduled_transfer",
+     "from": "sam",
+     "to": "alex",
+     "payee": null,
+     "amount": 133.33,
+     "date": "2026-11-28",
+     "status": "pending",
+     "nessie_id": null
+    },
+    {
+     "type": "scheduled_transfer",
+     "from": "jordan",
+     "to": "alex",
+     "payee": null,
+     "amount": 133.33,
+     "date": "2026-11-28",
+     "status": "pending",
+     "nessie_id": null
+    },
+    {
+     "type": "scheduled_transfer",
+     "from": "sam",
+     "to": "alex",
+     "payee": null,
+     "amount": 133.33,
+     "date": "2026-12-28",
+     "status": "pending",
+     "nessie_id": null
+    },
+    {
+     "type": "scheduled_transfer",
+     "from": "jordan",
+     "to": "alex",
+     "payee": null,
+     "amount": 133.33,
+     "date": "2026-12-28",
+     "status": "pending",
+     "nessie_id": null
+    },
+    {
+     "type": "scheduled_transfer",
+     "from": "sam",
+     "to": "alex",
+     "payee": null,
+     "amount": 133.34,
+     "date": "2027-01-28",
+     "status": "pending",
+     "nessie_id": null
+    },
+    {
+     "type": "scheduled_transfer",
+     "from": "jordan",
+     "to": "alex",
+     "payee": null,
+     "amount": 133.34,
+     "date": "2027-01-28",
+     "status": "pending",
+     "nessie_id": null
+    }
+   ]
+  }
+ },
+ "scripts": {
+  "rent_group": "Rent for December is $2,400, due 2026-12-01: $800 each. Sam and Jordan send their share to Alex, then Alex pays Maple Court Apartments. Jordan can pay on 2026-12-16, so Alex fronts Jordan's share until then. Reply yes to approve.",
+  "rent_dm_jordan": "Rent is $800 and your payday is 2026-12-15, so Alex fronts your share now and you auto-repay Alex $800 on 2026-12-16. Reply yes to agree.",
+  "couch_group": "Up front ($400 each) doesn't work for everyone. Over 3 months it's $133.33/mo each: Alex ok, Sam ok, Jordan tight. Alex buys the $1,200 couch from Couch Co. now and Sam and Jordan pay Alex monthly. Reply yes to approve.",
+  "hello_group": "Hi, I'm the house agent. Ask me things like \"can we afford a $1,200 couch?\"",
+  "dm_default": "I'm your personal agent. I only share ok, tight or no with the house."
+ }
+}

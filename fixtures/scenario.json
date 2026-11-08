@@ -1,0 +1,1232 @@
+{
+ "today": "2026-11-28",
+ "bank_name": "Harbor Bank",
+ "landlord": "Maple Court Apartments",
+ "merchants": [
+  "Maple Court Apartments",
+  "Couch Co.",
+  "City Power"
+ ],
+ "roommates": [
+  {
+   "id": "alex",
+   "name": "Alex",
+   "handle": "sim:alex",
+   "monthly_income": 5800,
+   "pay": {
+    "amount": 5800,
+    "schedule": "monthly",
+    "day": 1
+   },
+   "next_payday": "2026-12-01",
+   "accounts": [
+    {
+     "id": "alex-chk",
+     "type": "checking",
+     "name": "Everyday Checking",
+     "balance": 4200
+    },
+    {
+     "id": "alex-cc",
+     "type": "credit_card",
+     "name": "Rewards Card",
+     "balance": 1200,
+     "credit_limit": 8000
+    }
+   ]
+  },
+  {
+   "id": "sam",
+   "name": "Sam",
+   "handle": "sim:sam",
+   "monthly_income": 4116.67,
+   "pay": {
+    "amount": 1900,
+    "schedule": "biweekly",
+    "anchor": "2026-12-05"
+   },
+   "next_payday": "2026-12-05",
+   "accounts": [
+    {
+     "id": "sam-chk",
+     "type": "checking",
+     "name": "Everyday Checking",
+     "balance": 2600
+    },
+    {
+     "id": "sam-cc",
+     "type": "credit_card",
+     "name": "Rewards Card",
+     "balance": 600,
+     "credit_limit": 3000
+    }
+   ]
+  },
+  {
+   "id": "jordan",
+   "name": "Jordan",
+   "handle": "sim:jordan",
+   "monthly_income": 1750,
+   "pay": {
+    "amount": 1350,
+    "schedule": "monthly",
+    "day": 15
+   },
+   "next_payday": "2026-12-15",
+   "accounts": [
+    {
+     "id": "jordan-chk",
+     "type": "checking",
+     "name": "Everyday Checking",
+     "balance": 310
+    },
+    {
+     "id": "jordan-cc",
+     "type": "credit_card",
+     "name": "Rewards Card",
+     "balance": 450,
+     "credit_limit": 1000
+    }
+   ]
+  }
+ ],
+ "transactions": [
+  {
+   "id": "h-alex-001",
+   "roommate_id": "alex",
+   "date": "2026-09-01",
+   "description": "Payroll - Acme Corp",
+   "category": "income",
+   "amount": 5800
+  },
+  {
+   "id": "h-alex-002",
+   "roommate_id": "alex",
+   "date": "2026-09-01",
+   "description": "Rent share - Maple Court Apartments",
+   "category": "rent",
+   "amount": -800
+  },
+  {
+   "id": "h-alex-019",
+   "roommate_id": "alex",
+   "date": "2026-09-01",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -118.86
+  },
+  {
+   "id": "h-jordan-002",
+   "roommate_id": "jordan",
+   "date": "2026-09-01",
+   "description": "Rent share - Maple Court Apartments",
+   "category": "rent",
+   "amount": -800
+  },
+  {
+   "id": "h-jordan-025",
+   "roommate_id": "jordan",
+   "date": "2026-09-01",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -85.75
+  },
+  {
+   "id": "h-sam-001",
+   "roommate_id": "sam",
+   "date": "2026-09-01",
+   "description": "Rent share - Maple Court Apartments",
+   "category": "rent",
+   "amount": -800
+  },
+  {
+   "id": "h-sam-019",
+   "roommate_id": "sam",
+   "date": "2026-09-01",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -109.05
+  },
+  {
+   "id": "h-alex-020",
+   "roommate_id": "alex",
+   "date": "2026-09-04",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -59.83
+  },
+  {
+   "id": "h-jordan-026",
+   "roommate_id": "jordan",
+   "date": "2026-09-04",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -20.79
+  },
+  {
+   "id": "h-sam-020",
+   "roommate_id": "sam",
+   "date": "2026-09-04",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -26.63
+  },
+  {
+   "id": "h-alex-003",
+   "roommate_id": "alex",
+   "date": "2026-09-05",
+   "description": "StreamFlix",
+   "category": "subscriptions",
+   "amount": -15.49
+  },
+  {
+   "id": "h-jordan-003",
+   "roommate_id": "jordan",
+   "date": "2026-09-05",
+   "description": "StreamFlix",
+   "category": "subscriptions",
+   "amount": -15.49
+  },
+  {
+   "id": "h-sam-002",
+   "roommate_id": "sam",
+   "date": "2026-09-05",
+   "description": "StreamFlix",
+   "category": "subscriptions",
+   "amount": -15.49
+  },
+  {
+   "id": "h-jordan-006",
+   "roommate_id": "jordan",
+   "date": "2026-09-06",
+   "description": "Gig payout - DashRun",
+   "category": "income",
+   "amount": 112.9
+  },
+  {
+   "id": "h-alex-004",
+   "roommate_id": "alex",
+   "date": "2026-09-08",
+   "description": "Gym Plus",
+   "category": "subscriptions",
+   "amount": -39.0
+  },
+  {
+   "id": "h-alex-021",
+   "roommate_id": "alex",
+   "date": "2026-09-08",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -97.21
+  },
+  {
+   "id": "h-jordan-004",
+   "roommate_id": "jordan",
+   "date": "2026-09-08",
+   "description": "Phone Plan",
+   "category": "subscriptions",
+   "amount": -45.0
+  },
+  {
+   "id": "h-jordan-027",
+   "roommate_id": "jordan",
+   "date": "2026-09-08",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -65.42
+  },
+  {
+   "id": "h-sam-003",
+   "roommate_id": "sam",
+   "date": "2026-09-08",
+   "description": "Music Box",
+   "category": "subscriptions",
+   "amount": -10.99
+  },
+  {
+   "id": "h-sam-021",
+   "roommate_id": "sam",
+   "date": "2026-09-08",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -82.34
+  },
+  {
+   "id": "h-alex-005",
+   "roommate_id": "alex",
+   "date": "2026-09-11",
+   "description": "Cloud Drive",
+   "category": "subscriptions",
+   "amount": -2.99
+  },
+  {
+   "id": "h-alex-022",
+   "roommate_id": "alex",
+   "date": "2026-09-11",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -45.89
+  },
+  {
+   "id": "h-jordan-028",
+   "roommate_id": "jordan",
+   "date": "2026-09-11",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -26.63
+  },
+  {
+   "id": "h-sam-022",
+   "roommate_id": "sam",
+   "date": "2026-09-11",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -53.56
+  },
+  {
+   "id": "h-sam-018",
+   "roommate_id": "sam",
+   "date": "2026-09-12",
+   "description": "Payroll - Studio Nine",
+   "category": "income",
+   "amount": 1900
+  },
+  {
+   "id": "h-jordan-007",
+   "roommate_id": "jordan",
+   "date": "2026-09-14",
+   "description": "Gig payout - DashRun",
+   "category": "income",
+   "amount": 131.44
+  },
+  {
+   "id": "h-alex-023",
+   "roommate_id": "alex",
+   "date": "2026-09-15",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -121.95
+  },
+  {
+   "id": "h-jordan-001",
+   "roommate_id": "jordan",
+   "date": "2026-09-15",
+   "description": "Payroll - Corner Books",
+   "category": "income",
+   "amount": 1350
+  },
+  {
+   "id": "h-jordan-029",
+   "roommate_id": "jordan",
+   "date": "2026-09-15",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -61.79
+  },
+  {
+   "id": "h-sam-023",
+   "roommate_id": "sam",
+   "date": "2026-09-15",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -91.91
+  },
+  {
+   "id": "h-alex-024",
+   "roommate_id": "alex",
+   "date": "2026-09-18",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -58.62
+  },
+  {
+   "id": "h-jordan-030",
+   "roommate_id": "jordan",
+   "date": "2026-09-18",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -19.12
+  },
+  {
+   "id": "h-sam-024",
+   "roommate_id": "sam",
+   "date": "2026-09-18",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -27.2
+  },
+  {
+   "id": "h-alex-006",
+   "roommate_id": "alex",
+   "date": "2026-09-20",
+   "description": "Electric share - City Power",
+   "category": "utilities",
+   "amount": -46.48
+  },
+  {
+   "id": "h-jordan-005",
+   "roommate_id": "jordan",
+   "date": "2026-09-20",
+   "description": "Electric share - City Power",
+   "category": "utilities",
+   "amount": -53.02
+  },
+  {
+   "id": "h-sam-004",
+   "roommate_id": "sam",
+   "date": "2026-09-20",
+   "description": "Electric share - City Power",
+   "category": "utilities",
+   "amount": -43.02
+  },
+  {
+   "id": "h-alex-025",
+   "roommate_id": "alex",
+   "date": "2026-09-22",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -124.02
+  },
+  {
+   "id": "h-jordan-008",
+   "roommate_id": "jordan",
+   "date": "2026-09-22",
+   "description": "Gig payout - DashRun",
+   "category": "income",
+   "amount": 124.63
+  },
+  {
+   "id": "h-jordan-031",
+   "roommate_id": "jordan",
+   "date": "2026-09-22",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -73.6
+  },
+  {
+   "id": "h-sam-025",
+   "roommate_id": "sam",
+   "date": "2026-09-22",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -82.57
+  },
+  {
+   "id": "h-alex-026",
+   "roommate_id": "alex",
+   "date": "2026-09-25",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -61.38
+  },
+  {
+   "id": "h-jordan-032",
+   "roommate_id": "jordan",
+   "date": "2026-09-25",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -21.0
+  },
+  {
+   "id": "h-sam-026",
+   "roommate_id": "sam",
+   "date": "2026-09-25",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -45.49
+  },
+  {
+   "id": "h-sam-017",
+   "roommate_id": "sam",
+   "date": "2026-09-26",
+   "description": "Payroll - Studio Nine",
+   "category": "income",
+   "amount": 1900
+  },
+  {
+   "id": "h-alex-027",
+   "roommate_id": "alex",
+   "date": "2026-09-29",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -129.72
+  },
+  {
+   "id": "h-jordan-033",
+   "roommate_id": "jordan",
+   "date": "2026-09-29",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -75.76
+  },
+  {
+   "id": "h-sam-027",
+   "roommate_id": "sam",
+   "date": "2026-09-29",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -79.76
+  },
+  {
+   "id": "h-alex-007",
+   "roommate_id": "alex",
+   "date": "2026-10-01",
+   "description": "Payroll - Acme Corp",
+   "category": "income",
+   "amount": 5800
+  },
+  {
+   "id": "h-alex-008",
+   "roommate_id": "alex",
+   "date": "2026-10-01",
+   "description": "Rent share - Maple Court Apartments",
+   "category": "rent",
+   "amount": -800
+  },
+  {
+   "id": "h-jordan-010",
+   "roommate_id": "jordan",
+   "date": "2026-10-01",
+   "description": "Rent share - Maple Court Apartments",
+   "category": "rent",
+   "amount": -800
+  },
+  {
+   "id": "h-sam-005",
+   "roommate_id": "sam",
+   "date": "2026-10-01",
+   "description": "Rent share - Maple Court Apartments",
+   "category": "rent",
+   "amount": -800
+  },
+  {
+   "id": "h-alex-028",
+   "roommate_id": "alex",
+   "date": "2026-10-02",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -74.95
+  },
+  {
+   "id": "h-jordan-034",
+   "roommate_id": "jordan",
+   "date": "2026-10-02",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -32.5
+  },
+  {
+   "id": "h-sam-028",
+   "roommate_id": "sam",
+   "date": "2026-10-02",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -45.1
+  },
+  {
+   "id": "h-alex-009",
+   "roommate_id": "alex",
+   "date": "2026-10-05",
+   "description": "StreamFlix",
+   "category": "subscriptions",
+   "amount": -15.49
+  },
+  {
+   "id": "h-jordan-011",
+   "roommate_id": "jordan",
+   "date": "2026-10-05",
+   "description": "StreamFlix",
+   "category": "subscriptions",
+   "amount": -15.49
+  },
+  {
+   "id": "h-sam-006",
+   "roommate_id": "sam",
+   "date": "2026-10-05",
+   "description": "StreamFlix",
+   "category": "subscriptions",
+   "amount": -15.49
+  },
+  {
+   "id": "h-alex-029",
+   "roommate_id": "alex",
+   "date": "2026-10-06",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -126.47
+  },
+  {
+   "id": "h-jordan-014",
+   "roommate_id": "jordan",
+   "date": "2026-10-06",
+   "description": "Gig payout - DashRun",
+   "category": "income",
+   "amount": 127.35
+  },
+  {
+   "id": "h-jordan-035",
+   "roommate_id": "jordan",
+   "date": "2026-10-06",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -72.54
+  },
+  {
+   "id": "h-sam-029",
+   "roommate_id": "sam",
+   "date": "2026-10-06",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -109.21
+  },
+  {
+   "id": "h-alex-010",
+   "roommate_id": "alex",
+   "date": "2026-10-08",
+   "description": "Gym Plus",
+   "category": "subscriptions",
+   "amount": -39.0
+  },
+  {
+   "id": "h-jordan-012",
+   "roommate_id": "jordan",
+   "date": "2026-10-08",
+   "description": "Phone Plan",
+   "category": "subscriptions",
+   "amount": -45.0
+  },
+  {
+   "id": "h-sam-007",
+   "roommate_id": "sam",
+   "date": "2026-10-08",
+   "description": "Music Box",
+   "category": "subscriptions",
+   "amount": -10.99
+  },
+  {
+   "id": "h-alex-030",
+   "roommate_id": "alex",
+   "date": "2026-10-09",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -54.4
+  },
+  {
+   "id": "h-jordan-036",
+   "roommate_id": "jordan",
+   "date": "2026-10-09",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -30.14
+  },
+  {
+   "id": "h-sam-030",
+   "roommate_id": "sam",
+   "date": "2026-10-09",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -29.13
+  },
+  {
+   "id": "h-sam-016",
+   "roommate_id": "sam",
+   "date": "2026-10-10",
+   "description": "Payroll - Studio Nine",
+   "category": "income",
+   "amount": 1900
+  },
+  {
+   "id": "h-alex-011",
+   "roommate_id": "alex",
+   "date": "2026-10-11",
+   "description": "Cloud Drive",
+   "category": "subscriptions",
+   "amount": -2.99
+  },
+  {
+   "id": "h-alex-031",
+   "roommate_id": "alex",
+   "date": "2026-10-13",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -97.6
+  },
+  {
+   "id": "h-jordan-037",
+   "roommate_id": "jordan",
+   "date": "2026-10-13",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -82.94
+  },
+  {
+   "id": "h-sam-031",
+   "roommate_id": "sam",
+   "date": "2026-10-13",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -71.57
+  },
+  {
+   "id": "h-jordan-015",
+   "roommate_id": "jordan",
+   "date": "2026-10-14",
+   "description": "Gig payout - DashRun",
+   "category": "income",
+   "amount": 112.79
+  },
+  {
+   "id": "h-jordan-009",
+   "roommate_id": "jordan",
+   "date": "2026-10-15",
+   "description": "Payroll - Corner Books",
+   "category": "income",
+   "amount": 1350
+  },
+  {
+   "id": "h-alex-032",
+   "roommate_id": "alex",
+   "date": "2026-10-16",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -64.45
+  },
+  {
+   "id": "h-jordan-038",
+   "roommate_id": "jordan",
+   "date": "2026-10-16",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -26.46
+  },
+  {
+   "id": "h-sam-032",
+   "roommate_id": "sam",
+   "date": "2026-10-16",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -48.39
+  },
+  {
+   "id": "h-alex-012",
+   "roommate_id": "alex",
+   "date": "2026-10-20",
+   "description": "Electric share - City Power",
+   "category": "utilities",
+   "amount": -41.16
+  },
+  {
+   "id": "h-alex-033",
+   "roommate_id": "alex",
+   "date": "2026-10-20",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -133.77
+  },
+  {
+   "id": "h-jordan-013",
+   "roommate_id": "jordan",
+   "date": "2026-10-20",
+   "description": "Electric share - City Power",
+   "category": "utilities",
+   "amount": -40.75
+  },
+  {
+   "id": "h-jordan-039",
+   "roommate_id": "jordan",
+   "date": "2026-10-20",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -77.4
+  },
+  {
+   "id": "h-sam-008",
+   "roommate_id": "sam",
+   "date": "2026-10-20",
+   "description": "Electric share - City Power",
+   "category": "utilities",
+   "amount": -50.15
+  },
+  {
+   "id": "h-sam-033",
+   "roommate_id": "sam",
+   "date": "2026-10-20",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -97.81
+  },
+  {
+   "id": "h-jordan-016",
+   "roommate_id": "jordan",
+   "date": "2026-10-22",
+   "description": "Gig payout - DashRun",
+   "category": "income",
+   "amount": 113.63
+  },
+  {
+   "id": "h-alex-034",
+   "roommate_id": "alex",
+   "date": "2026-10-23",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -55.69
+  },
+  {
+   "id": "h-jordan-040",
+   "roommate_id": "jordan",
+   "date": "2026-10-23",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -24.12
+  },
+  {
+   "id": "h-sam-034",
+   "roommate_id": "sam",
+   "date": "2026-10-23",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -45.8
+  },
+  {
+   "id": "h-sam-015",
+   "roommate_id": "sam",
+   "date": "2026-10-24",
+   "description": "Payroll - Studio Nine",
+   "category": "income",
+   "amount": 1900
+  },
+  {
+   "id": "h-alex-035",
+   "roommate_id": "alex",
+   "date": "2026-10-27",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -132.0
+  },
+  {
+   "id": "h-jordan-041",
+   "roommate_id": "jordan",
+   "date": "2026-10-27",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -61.82
+  },
+  {
+   "id": "h-sam-035",
+   "roommate_id": "sam",
+   "date": "2026-10-27",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -88.96
+  },
+  {
+   "id": "h-alex-036",
+   "roommate_id": "alex",
+   "date": "2026-10-30",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -87.23
+  },
+  {
+   "id": "h-jordan-042",
+   "roommate_id": "jordan",
+   "date": "2026-10-30",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -29.03
+  },
+  {
+   "id": "h-sam-036",
+   "roommate_id": "sam",
+   "date": "2026-10-30",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -48.25
+  },
+  {
+   "id": "h-alex-013",
+   "roommate_id": "alex",
+   "date": "2026-11-01",
+   "description": "Payroll - Acme Corp",
+   "category": "income",
+   "amount": 5800
+  },
+  {
+   "id": "h-alex-014",
+   "roommate_id": "alex",
+   "date": "2026-11-01",
+   "description": "Rent share - Maple Court Apartments",
+   "category": "rent",
+   "amount": -800
+  },
+  {
+   "id": "h-jordan-018",
+   "roommate_id": "jordan",
+   "date": "2026-11-01",
+   "description": "Rent share - Maple Court Apartments",
+   "category": "rent",
+   "amount": -800
+  },
+  {
+   "id": "h-sam-009",
+   "roommate_id": "sam",
+   "date": "2026-11-01",
+   "description": "Rent share - Maple Court Apartments",
+   "category": "rent",
+   "amount": -800
+  },
+  {
+   "id": "h-alex-037",
+   "roommate_id": "alex",
+   "date": "2026-11-03",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -122.36
+  },
+  {
+   "id": "h-jordan-043",
+   "roommate_id": "jordan",
+   "date": "2026-11-03",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -71.57
+  },
+  {
+   "id": "h-sam-037",
+   "roommate_id": "sam",
+   "date": "2026-11-03",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -102.88
+  },
+  {
+   "id": "h-alex-015",
+   "roommate_id": "alex",
+   "date": "2026-11-05",
+   "description": "StreamFlix",
+   "category": "subscriptions",
+   "amount": -15.49
+  },
+  {
+   "id": "h-jordan-019",
+   "roommate_id": "jordan",
+   "date": "2026-11-05",
+   "description": "StreamFlix",
+   "category": "subscriptions",
+   "amount": -15.49
+  },
+  {
+   "id": "h-sam-010",
+   "roommate_id": "sam",
+   "date": "2026-11-05",
+   "description": "StreamFlix",
+   "category": "subscriptions",
+   "amount": -15.49
+  },
+  {
+   "id": "h-alex-038",
+   "roommate_id": "alex",
+   "date": "2026-11-06",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -89.65
+  },
+  {
+   "id": "h-jordan-022",
+   "roommate_id": "jordan",
+   "date": "2026-11-06",
+   "description": "Gig payout - DashRun",
+   "category": "income",
+   "amount": 118.93
+  },
+  {
+   "id": "h-jordan-044",
+   "roommate_id": "jordan",
+   "date": "2026-11-06",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -28.37
+  },
+  {
+   "id": "h-sam-038",
+   "roommate_id": "sam",
+   "date": "2026-11-06",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -34.96
+  },
+  {
+   "id": "h-sam-014",
+   "roommate_id": "sam",
+   "date": "2026-11-07",
+   "description": "Payroll - Studio Nine",
+   "category": "income",
+   "amount": 1900
+  },
+  {
+   "id": "h-alex-016",
+   "roommate_id": "alex",
+   "date": "2026-11-08",
+   "description": "Gym Plus",
+   "category": "subscriptions",
+   "amount": -39.0
+  },
+  {
+   "id": "h-jordan-020",
+   "roommate_id": "jordan",
+   "date": "2026-11-08",
+   "description": "Phone Plan",
+   "category": "subscriptions",
+   "amount": -45.0
+  },
+  {
+   "id": "h-sam-011",
+   "roommate_id": "sam",
+   "date": "2026-11-08",
+   "description": "Music Box",
+   "category": "subscriptions",
+   "amount": -10.99
+  },
+  {
+   "id": "h-alex-039",
+   "roommate_id": "alex",
+   "date": "2026-11-10",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -91.13
+  },
+  {
+   "id": "h-jordan-045",
+   "roommate_id": "jordan",
+   "date": "2026-11-10",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -61.77
+  },
+  {
+   "id": "h-sam-039",
+   "roommate_id": "sam",
+   "date": "2026-11-10",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -76.72
+  },
+  {
+   "id": "h-alex-017",
+   "roommate_id": "alex",
+   "date": "2026-11-11",
+   "description": "Cloud Drive",
+   "category": "subscriptions",
+   "amount": -2.99
+  },
+  {
+   "id": "h-alex-040",
+   "roommate_id": "alex",
+   "date": "2026-11-13",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -63.08
+  },
+  {
+   "id": "h-jordan-046",
+   "roommate_id": "jordan",
+   "date": "2026-11-13",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -30.36
+  },
+  {
+   "id": "h-sam-040",
+   "roommate_id": "sam",
+   "date": "2026-11-13",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -29.1
+  },
+  {
+   "id": "h-jordan-023",
+   "roommate_id": "jordan",
+   "date": "2026-11-14",
+   "description": "Gig payout - DashRun",
+   "category": "income",
+   "amount": 135.1
+  },
+  {
+   "id": "h-jordan-017",
+   "roommate_id": "jordan",
+   "date": "2026-11-15",
+   "description": "Payroll - Corner Books",
+   "category": "income",
+   "amount": 1350
+  },
+  {
+   "id": "h-alex-041",
+   "roommate_id": "alex",
+   "date": "2026-11-17",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -96.47
+  },
+  {
+   "id": "h-jordan-047",
+   "roommate_id": "jordan",
+   "date": "2026-11-17",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -62.42
+  },
+  {
+   "id": "h-sam-041",
+   "roommate_id": "sam",
+   "date": "2026-11-17",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -85.64
+  },
+  {
+   "id": "h-alex-018",
+   "roommate_id": "alex",
+   "date": "2026-11-20",
+   "description": "Electric share - City Power",
+   "category": "utilities",
+   "amount": -48.49
+  },
+  {
+   "id": "h-alex-042",
+   "roommate_id": "alex",
+   "date": "2026-11-20",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -52.38
+  },
+  {
+   "id": "h-jordan-021",
+   "roommate_id": "jordan",
+   "date": "2026-11-20",
+   "description": "Electric share - City Power",
+   "category": "utilities",
+   "amount": -42.48
+  },
+  {
+   "id": "h-jordan-048",
+   "roommate_id": "jordan",
+   "date": "2026-11-20",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -23.98
+  },
+  {
+   "id": "h-sam-012",
+   "roommate_id": "sam",
+   "date": "2026-11-20",
+   "description": "Electric share - City Power",
+   "category": "utilities",
+   "amount": -56.54
+  },
+  {
+   "id": "h-sam-042",
+   "roommate_id": "sam",
+   "date": "2026-11-20",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -55.5
+  },
+  {
+   "id": "h-sam-013",
+   "roommate_id": "sam",
+   "date": "2026-11-21",
+   "description": "Payroll - Studio Nine",
+   "category": "income",
+   "amount": 1900
+  },
+  {
+   "id": "h-jordan-024",
+   "roommate_id": "jordan",
+   "date": "2026-11-22",
+   "description": "Gig payout - DashRun",
+   "category": "income",
+   "amount": 147.91
+  },
+  {
+   "id": "h-alex-043",
+   "roommate_id": "alex",
+   "date": "2026-11-24",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -117.47
+  },
+  {
+   "id": "h-jordan-049",
+   "roommate_id": "jordan",
+   "date": "2026-11-24",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -68.35
+  },
+  {
+   "id": "h-sam-043",
+   "roommate_id": "sam",
+   "date": "2026-11-24",
+   "description": "Grocery - FreshMart",
+   "category": "groceries",
+   "amount": -102.77
+  },
+  {
+   "id": "h-alex-044",
+   "roommate_id": "alex",
+   "date": "2026-11-27",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -84.17
+  },
+  {
+   "id": "h-jordan-050",
+   "roommate_id": "jordan",
+   "date": "2026-11-27",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -23.31
+  },
+  {
+   "id": "h-sam-044",
+   "roommate_id": "sam",
+   "date": "2026-11-27",
+   "description": "Dining - Taco Spot",
+   "category": "dining",
+   "amount": -55.24
+  }
+ ],
+ "bills": [
+  {
+   "id": "rent-2026-12",
+   "type": "rent",
+   "amount": 2400,
+   "payee": "Maple Court Apartments",
+   "payer": "alex",
+   "due": "2026-12-01"
+  },
+  {
+   "id": "electric-2026-12",
+   "type": "electric",
+   "amount": 150,
+   "payee": "City Power",
+   "payer": "alex",
+   "due": "2026-12-10"
+  }
+ ],
+ "house_rules": [
+  {
+   "id": "rule-electric",
+   "bill_type": "electric",
+   "split": {
+    "sam": 0.4
+   },
+   "source_text": "Sam pays 40% of electric",
+   "confirmed_by": [
+    "alex",
+    "sam",
+    "jordan"
+   ]
+  }
+ ]
+}

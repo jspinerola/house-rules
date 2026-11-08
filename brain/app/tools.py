@@ -1,0 +1,114 @@
+"""Specialist tools the house agent calls (TOOLS_MODE=real). Pure code, no LLM.
+
+Rules (REQUIREMENTS M3):
+  can_cover: ok = balance stays >= $200 until next payday; tight = stays >= $0; no = goes negative.
+  payday_plan: fronter = roommate with the highest buffer_after(amount); repay = day after payday.
+  group_affordability: try each months option in order; first plan where nobody is "no" wins.
+"""
+from __future__ import annotations
+
+from datetime import date, timedelta
+
+from contracts.models import Affordability, AffordPlan, CoverAnswer, Level, PaydayPlan, SplitResult
+
+from . import registry
+
+OK_FLOOR = 200.0
+MAX_PAYDAYS_AHEAD = 6
+COMMITTED = ("pending", "approved", "executed")
+
+
+def _d(s: str) -> date:
+    return date.fromisoformat(s)
+
+
+def _add_month(d: date, day: int) -> date:
+    y, m = (d.year + 1, 1) if d.month == 12 else (d.year, d.month + 1)
+    return date(y, m, day)
+
+
+class Tools:
+    # ----- helpers -----
+
+    def next_payday(self, rid: str, after: str) -> str | None:
+        pay = registry.get("store").get_roommate(rid).pay
+        a = _d(after)
+        if pay.schedule == "monthly":
+            if pay.day is None:
+                raise ValueError(f"{rid}: monthly pay rule needs a day")
+            cand = date(a.year, a.month, pay.day)
+            return (cand if cand > a else _add_month(a, pay.day)).isoformat()
+        if pay.anchor is None:
+            raise ValueError(f"{rid}: biweekly pay rule needs an anchor")
+        steps = (a - _d(pay.anchor)).days // 14 + 1
+        return (_d(pay.anchor) + timedelta(days=14 * steps)).isoformat()
+
+    def _committed_out(self, rid: str, until: str) -> float:
+        """Money already promised out of rid's account on or before `until`."""
+        return round(sum(
+            leg.amount
+            for p in registry.get("store").proposals() if p.status in COMMITTED
+            for leg in p.legs if leg.status == "pending" and leg.from_ == rid and leg.date <= until
+        ), 2)
+
+    def _projection(self, rid: str, amount: float, by: str) -> tuple[float, str]:
+        """Cash left at the next payday after `by`, crediting paydays up to `by`."""
+        store = registry.get("store")
+        pay = store.get_roommate(rid).pay
+        cash = registry.get("nessie").balance(rid) - amount
+        d = self.next_payday(rid, store.today())
+        while d <= by:
+            cash += pay.amount
+            d = self.next_payday(rid, d)
+        return round(cash - self._committed_out(rid, d), 2), d
+
+    def buffer_after(self, rid: str, amount: float) -> float:
+        return self._projection(rid, amount, registry.get("store").today())[0]
+
+    # ----- protocol -----
+
+    def split_bill(self, bill_type: str, amount: float) -> SplitResult:
+        store = registry.get("store")
+        ids = [r.id for r in store.roommates()]
+        rule = store.house_rule(bill_type)
+        fixed = {rid: round(amount * frac, 2) for rid, frac in (rule.split if rule else {}).items()}
+        rest = [rid for rid in ids if rid not in fixed]
+        each = round((amount - sum(fixed.values())) / len(rest), 2) if rest else 0.0
+        shares = {rid: fixed.get(rid, each) for rid in ids}
+        if rest:  # put rounding cents on the first evenly-split roommate
+            shares[rest[0]] = round(shares[rest[0]] + amount - sum(shares.values()), 2)
+        return SplitResult(shares=shares)
+
+    def can_cover(self, rid: str, amount: float, date: str) -> CoverAnswer:
+        cash, horizon = self._projection(rid, amount, date)
+        level: Level = "ok" if cash >= OK_FLOOR else "tight" if cash >= 0 else "no"
+        if level != "no":
+            return CoverAnswer(level=level)
+        pay = registry.get("store").get_roommate(rid).pay
+        d = horizon
+        for _ in range(MAX_PAYDAYS_AHEAD):
+            cash += pay.amount
+            if cash >= 0:
+                return CoverAnswer(level="no", earliest_date=d)
+            d = self.next_payday(rid, d)
+        return CoverAnswer(level="no", earliest_date=None)
+
+    def payday_plan(self, rid: str, amount: float) -> PaydayPlan:
+        store = registry.get("store")
+        others = [r.id for r in store.roommates() if r.id != rid]
+        fronter = max(others, key=lambda o: self.buffer_after(o, amount))
+        payday = self.next_payday(rid, store.today())
+        return PaydayPlan(fronter=fronter, repay_date=(_d(payday) + timedelta(days=1)).isoformat())
+
+    def group_affordability(self, item: str, price: float,
+                            months_options: tuple[int, ...] = (1, 3)) -> Affordability:
+        store = registry.get("store")
+        ids = [r.id for r in store.roommates()]
+        today = store.today()
+        answers: dict[str, Level] = {}
+        for months in months_options:
+            per = round(price / len(ids) / months, 2)
+            answers = {rid: self.can_cover(rid, per, today).level for rid in ids}
+            if "no" not in answers.values():
+                return Affordability(answers=answers, plan=AffordPlan(months=months, per_person_monthly=per))
+        return Affordability(answers=answers, plan=None)
