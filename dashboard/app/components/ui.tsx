@@ -4,9 +4,9 @@ import type { Level, Proposal, TraceEvent } from "../../../contracts/types";
 // Static class strings so Tailwind can see them.
 export const AGENT_STYLE: Record<TraceEvent["agent"], { text: string; bar: string; label: string }> = {
   house: { text: "text-house", bar: "bg-house", label: "house" },
-  "personal:alex": { text: "text-alex", bar: "bg-alex", label: "alex's agent" },
-  "personal:sam": { text: "text-sam", bar: "bg-sam", label: "sam's agent" },
-  "personal:jordan": { text: "text-jordan", bar: "bg-jordan", label: "jordan's agent" },
+  "personal:alex": { text: "text-alex", bar: "bg-alex", label: "xander's agent" },
+  "personal:sam": { text: "text-sam", bar: "bg-sam", label: "julian's agent" },
+  "personal:jordan": { text: "text-jordan", bar: "bg-jordan", label: "kevin's agent" },
   treasurer: { text: "text-treasurer", bar: "bg-treasurer", label: "treasurer" },
   auditor: { text: "text-auditor", bar: "bg-auditor", label: "auditor" },
   watcher: { text: "text-watcher", bar: "bg-watcher", label: "watcher" },

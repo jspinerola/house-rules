@@ -23,18 +23,18 @@ Previously explored and dropped: the family version ("Need to Know"). Its consen
 
 | Roommate | Situation |
 | --- | --- |
-| Alex | Lease holder; landlord bill comes from Alex's account. Steady salary, paid on the 1st. |
-| Sam | Works from home, so the house rule is that Sam pays 40% of electric. Paid biweekly. |
-| Jordan | Part-time plus gig income, paid on the 15th. Runway is tight at month start. |
+| Xander | Lease holder; landlord bill comes from Xander's account. Steady salary, paid on the 1st. |
+| Julian | Works from home, so the house rule is that Julian pays 40% of electric. Paid biweekly. |
+| Kevin | Part-time plus gig income, paid on the 15th. Runway is tight at month start. |
 
 **Flows, with who approves**
 
 | # | Flow | Approval | Nessie calls | Priority |
 | --- | --- | --- | --- | --- |
-| 1 | **Rent day.** "Rent is $2,400 Friday. $800 each to Alex, then Alex pays the landlord." | Everyone (all 3 yes) | 2 transfers, 1 bill payment | P0 |
-| 2 | **Payday timing.** Jordan's runway shows he can't pay until the 15th. "Alex fronts Jordan's $800 now; Jordan auto-repays on the 16th." Group never sees Jordan's balance. | Alex (fronts) + Jordan (agrees to repay) | 1 transfer now, 1 scheduled transfer | P0 |
+| 1 | **Rent day.** "Rent is $2,400 Friday. $800 each to Xander, then Xander pays the landlord." | Everyone (all 3 yes) | 2 transfers, 1 bill payment | P0 |
+| 2 | **Payday timing.** Kevin's runway shows he can't pay until the 15th. "Xander fronts Kevin's $800 now; Kevin auto-repays on the 16th." Group never sees Kevin's balance. | Xander (fronts) + Kevin (agrees to repay) | 1 transfer now, 1 scheduled transfer | P0 |
 | 3 | **Group affordability.** "Can we afford a $1,200 couch?" Each personal agent answers ok, tight or no. House agent proposes $400 each over 3 months. | Majority poll, then each payer | 3 scheduled transfers, 1 purchase | P0 |
-| 4 | **Utility split.** Electric bill arrives; split by the house rule (Sam 40%). | Each payer | Transfers | P1 |
+| 4 | **Utility split.** Electric bill arrives; split by the house rule (Julian 40%). | Each payer | Transfers | P1 |
 | 5 | **Receipt photo.** Someone texts a grocery receipt; agent asks who shared what. | Each payer | Transfers | P1 |
 | 6 | **Duplicate subscriptions.** All 3 pay for the same streaming service; propose one shared plan. | Each person cancels their own | Bill changes | P2 |
 | 7 | **Lease renewal.** "Can we take $2,700?" Each personal agent checks the 30% rent-to-income rule, shares status only. | None (information only) | Reads only | P2 |
@@ -63,7 +63,7 @@ Agents are split by **what they may see and do**, not by topic. That gives each 
 - `read_receipt(image)`: Grok vision to line items (P1).
 - `group_affordability(item, price)`: fans out to personal agents and combines their answers.
 - `payday_plan(member, amount)`: finds the earliest payday that keeps runway above a floor.
-- `watch()`: runs on a timer, e.g. "rent in 3 days and Sam's checking won't cover it" leads to a private DM to Sam.
+- `watch()`: runs on a timer, e.g. "rent in 3 days and Julian's checking won't cover it" leads to a private DM to Julian.
 
 **Rules every prompt carries**
 
@@ -86,7 +86,7 @@ Agents are split by **what they may see and do**, not by topic. That gives each 
 
 **P1: if on schedule**
 
-- Utility split with house rules set by chat ("Sam pays 40% of electric"), parsed into a rules table and confirmed.
+- Utility split with house rules set by chat ("Julian pays 40% of electric"), parsed into a rules table and confirmed.
 - Receipt photo split.
 - Watcher nudges by DM before rent day.
 - Small-amount auto-approve with veto window.
@@ -123,7 +123,7 @@ Personal agents never post in the group; the house agent only gets what they rel
 | Table | Key fields |
 | --- | --- |
 | `roommates` | id, name, photon\_handle, nessie\_account\_id, payday\_rule |
-| `house_rules` | id, bill\_type, split (e.g. Sam 40%), source\_text, confirmed\_by |
+| `house_rules` | id, bill\_type, split (e.g. Julian 40%), source\_text, confirmed\_by |
 | `proposals` | id, flow, amounts, required\_approvers, status |
 | `approvals` | proposal\_id, roommate\_id, reply\_text, ts |
 | `ledger` | ts, agent, event (asked, answered, executed), detail, nessie\_id |
@@ -215,7 +215,7 @@ Never cut: rent-day approvals, personal agents answering ok/tight/no, treasurer 
 **3-minute demo** (two phones on a document camera or mirrored, ledger page on the projector)
 
 1. **Hook (15 s):** "Every apartment has a group chat, and every group chat has someone chasing rent."
-2. **Rent day (45 s):** house agent posts rent. Alex and Sam reply yes. Jordan's personal agent DMs him privately and proposes payday fronting. Alex approves fronting. Nessie balances move on the ledger.
+2. **Rent day (45 s):** house agent posts rent. Xander and Julian reply yes. Kevin's personal agent DMs him privately and proposes payday fronting. Xander approves fronting. Nessie balances move on the ledger.
 3. **The couch (60 s):** "Can we afford a $1,200 couch?" The ledger shows the house agent asking 3 personal agents: ok, ok, tight. The proposal becomes $400 each over 3 months. The poll passes, and the treasurer schedules it in Nessie.
 4. **Under the hood (30 s):** the agent roster split by permissions, the treasurer as the only agent that can move money, the auditor blocking an invented number.
 5. **Close (30 s):** "No app, no IOUs, nobody's balance in the group chat. Built in Cursor, powered by Grok, banking on Nessie."
@@ -366,18 +366,18 @@ The demo clock starts on **2026-11-28**. Rent is due **2026-12-01**. All amounts
 
 | id | Name | Starting checking | Income | Next payday | Notes |
 | --- | --- | --- | --- | --- | --- |
-| `alex` | Alex | $4,200 | $5,800 salary, 1st of month | 2026-12-01 | Lease holder; pays the landlord |
-| `sam` | Sam | $2,600 | $1,900 biweekly | 2026-12-05 | Seeded house rule: 40% of electric (more rules are set in chat) |
-| `jordan` | Jordan | $310 | $1,350 on the 15th, plus gig deposits | 2026-12-15 | Can't cover $800 before payday |
+| `alex` | Xander | $4,200 | $5,800 salary, 1st of month | 2026-12-01 | Lease holder; pays the landlord |
+| `sam` | Julian | $2,600 | $1,900 biweekly | 2026-12-05 | Seeded house rule: 40% of electric (more rules are set in chat) |
+| `jordan` | Kevin | $310 | $1,350 on the 15th, plus gig deposits | 2026-12-15 | Can't cover $800 before payday |
 
-Shared items: landlord **Maple Court Apartments**, rent **$2,400/mo** (bill on Alex's account). Electric bill **$150**, arrives on demand. Couch from **Couch Co.**, **$1,200**. Seed 3 months of synthetic history per roommate (paychecks, groceries, subscriptions) so indicators have something to work with.
+Shared items: landlord **Maple Court Apartments**, rent **$2,400/mo** (bill on Xander's account). Electric bill **$150**, arrives on demand. Couch from **Couch Co.**, **$1,200**. Seed 3 months of synthetic history per roommate (paychecks, groceries, subscriptions) so indicators have something to work with.
 
 Expected results, which the tests should check:
 
 - Rent split = $800 each.
 - `can_cover(jordan, 800, 2026-11-30)` = `no`, earliest date 2026-12-15.
-- Electric split = Sam $60, Alex $45, Jordan $45.
-- `Couch at $400 each up front: Alex ok, Sam ok, Jordan no. Over 3 months ($133.33/mo each): Jordan tight, so the house agent proposes the 3-month plan.`
+- Electric split = Julian $60, Xander $45, Kevin $45.
+- `Couch at $400 each up front: Xander ok, Julian ok, Kevin no. Over 3 months ($133.33/mo each): Kevin tight, so the house agent proposes the 3-month plan.`
 
 ### Brain HTTP API (port 8000)
 
@@ -486,7 +486,7 @@ check(text, allowed_numbers: set[float], audience: "group"|roommate_id) -> {"ok"
 ```python
 # nessie.py
 deposit(rid, amount, description) -> str     # /demo/advance credits every payday it crosses:
-                                             # Alex 12-01, Sam 12-05, Jordan 12-15 (Jordan has $860 after repaying 12-16)
+                                             # Xander 12-01, Julian 12-05, Kevin 12-15 (Kevin has $860 after repaying 12-16)
 # tools.py
 next_payday(rid, after) -> date | None       # first payday strictly after `after`
 # can_cover: cash = balance - amount - legs already committed out of the account before next payday;
@@ -495,7 +495,7 @@ next_payday(rid, after) -> date | None       # first payday strictly after `afte
 # proposals.py
 parse(text) -> "yes" | "no" | None           # used by /chat routing
 # agents/personal.py
-explain(rid, proposal) -> list[Reply]        # private DM about a proposal (Jordan's fronting DM)
+explain(rid, proposal) -> list[Reply]        # private DM about a proposal (Kevin's fronting DM)
 # store (db.py)
 roommates(); proposals(); bill(type); house_rule(type)
 # NEW module M16 outbox.py   OUTBOX_MODE=stub|http
@@ -532,8 +532,8 @@ group_affordability(item, price, months_options=(1, 3), shares=None)
 
 **Behaviors pinned down**
 
-- Rent with fronting is ONE proposal (flow `rent`, all 3 approve): Sam to Alex $800 now, Alex to Maple Court $2,400 now, Jordan to Alex $800 scheduled 2026-12-16.
-- Couch: Alex buys $1,200 at Couch Co. now; Sam and Jordan each pay Alex $133.33, $133.33, $133.34 on 11-28, 12-28 and 01-28.
+- Rent with fronting is ONE proposal (flow `rent`, all 3 approve): Julian to Xander $800 now, Xander to Maple Court $2,400 now, Kevin to Xander $800 scheduled 2026-12-16.
+- Couch: Xander buys $1,200 at Couch Co. now; Julian and Kevin each pay Xander $133.33, $133.33, $133.34 on 11-28, 12-28 and 01-28.
 - The stub treasurer runs due legs through the stub Nessie and leaves future legs pending.
 - Flags: every flag accepts `real`, mapping to sqlite / grok / live / http. Unbuilt modes (tiger, grok calls, live, photon) raise instead of falling back. `/health` returns `{ok, llm_mode, nessie_mode, modes: {...}}`.
 - E2E: three tests (rent day, payday fronting, couch), each from `/demo/reset`; run all-stub, and all-real except NESSIE, LLM and OUTBOX.
@@ -545,15 +545,15 @@ group_affordability(item, price, months_options=(1, 3), shares=None)
 
 - [ ] **A1. DB schema (by hour 1).** Tables (Postgres-compatible SQL so the same schema runs on SQLite and Tiger Data; on Tiger, make transactions a hypertable and add a monthly-spend continuous aggregate): `roommates`, `accounts`, `transactions`, `bills`, `house_rules`, `proposals`, `legs`, `approvals`, `trace`, `clock`. Helpers `get_roommate(rid)`, `get_by_handle(handle)`.
   - Done when: `python -m app.db --init` creates an empty DB and the tests pass.
-- [ ] **A2. Seed (by hour 2).** Writes the 3 roommates with handles from `.env`, the starting balances, 3 months of history (paychecks on their schedule, rent share, groceries, 2 to 3 subscriptions, gig deposits for Jordan), the rent bill and the electric bill template. House rule: electric, Sam 40%.
+- [ ] **A2. Seed (by hour 2).** Writes the 3 roommates with handles from `.env`, the starting balances, 3 months of history (paychecks on their schedule, rent share, groceries, 2 to 3 subscriptions, gig deposits for Kevin), the rent bill and the electric bill template. House rule: electric, Julian 40%.
   - Done when: `python -m app.seed` is repeatable and balances match the scenario table exactly.
 - [ ] **A3. Demo clock.** `today()` reads the `clock` table; `set_today(date)`; reset sets it to 2026-11-28.
 - [ ] **A4. Indicators.** Copy `wellness/` from the workshop repo. Build a profile adapter from our tables to the workshop's profile shape, then reuse `compute_metrics`. Add `runway_days`, `rent_to_income`, `days_to_payday`, `buffer_after(amount)`.
-  - Done when: `compute("jordan")` returns all keys, and `runway_days` for Jordan is under 14.
+  - Done when: `compute("jordan")` returns all keys, and `runway_days` for Kevin is under 14.
 - [ ] **A5. Tools.** `split_bill`, `can_cover`, `payday_plan` (fronter = the roommate with the highest `buffer_after(amount)`, repay = day after the debtor's next payday), `group_affordability` (try 1 month, then 3; pick the first plan where nobody is `no`).
   - Done when: every "expected results" bullet in the contracts section is a passing pytest.
 - [ ] **A6. Demo endpoints logic.** `reset()`, `trigger(event)` (creates the rent or electric proposal through B's `proposals.create`, then pushes the house agent's message), `advance(to)` (sets the clock, calls `treasurer.run_due`).
-- [ ] **A7 (P1). House rules from chat.** Grok parses "Alex has the master, rent is 40/30/30" into a `rule` proposal; everyone approves; it's saved through the Store. See `docs/RULES_AND_PROFILES.md`.
+- [ ] **A7 (P1). House rules from chat.** Grok parses "Xander has the master, rent is 40/30/30" into a `rule` proposal; everyone approves; it's saved through the Store. See `docs/RULES_AND_PROFILES.md`.
 - [ ] **A9 (P1). Personal profile.** Profile from store history plus executed legs, DM-set preferences, and profile-aware `can_cover` / `payday_plan`. See `docs/RULES_AND_PROFILES.md`.
 - [ ] **A8 (P1). Receipt split.** `split_receipt(image)` using a Grok vision model for line items, then ask who shared which items.
 
@@ -569,9 +569,9 @@ group_affordability(item, price, months_options=(1, 3), shares=None)
 - [ ] **B4. House agent.** System prompt: the rules from the Agents section. Tools: `split_bill`, `group_affordability`, `payday_plan`, `ask_personal(rid, question)`, `create_proposal`. Handles the "rent\_due" trigger and free-form questions like "can we afford a $1,200 couch?"
   - Done when: the couch question produces trace events for 3 `ask_personal` calls and a 3-month purchase proposal.
 - [ ] **B5. Personal agents.** P0: code decides the answer (`can_cover`), and the LLM only words the DM. They release to the house agent only `{level, earliest_date}`. In DMs, they answer the roommate's own questions with their own numbers.
-  - Done when: Jordan gets a private DM explaining the fronting plan; the group sees only "Jordan can pay on the 16th."
+  - Done when: Kevin gets a private DM explaining the fronting plan; the group sees only "Kevin can pay on the 16th."
 - [ ] **B6. Auditor.** Before any reply is returned, check that every number is in `allowed_numbers` (gathered from the tool outputs of this turn). A group message may not contain any roommate's balance or income. On failure, retry once with the tool output in the prompt, then fall back to a template message.
-  - Done when: a test that feeds the house agent a draft containing Jordan's $310 balance gets blocked.
+  - Done when: a test that feeds the house agent a draft containing Kevin's $310 balance gets blocked.
 - [ ] **B7. Trace.** `trace.log(agent, event, detail)` everywhere: asked, answered, proposed, approved, executed, blocked. `/state` returns the latest 50.
 - [ ] **B8 (P1). Watcher.** On `trigger("watch")`, find anyone whose `can_cover` for their next due share is `tight` or `no`, and DM them first.
 
@@ -608,7 +608,7 @@ group_affordability(item, price, months_options=(1, 3), shares=None)
 - [ ] **D2. Live Nessie.** Read the Nessie docs and confirm endpoint names first. On `seed --nessie`: create 3 customers and checking accounts, store their ids on `roommates`, and deposit the starting balances. `transfer`, `pay_bill`, `purchase` map to the Nessie endpoints; `balance` and `transactions` read from Nessie.
   - Done when: one transfer in the Nessie API shows the new balance on `GET /bank/alex`.
 - [ ] **D3. Treasurer.** `execute(proposal_id)`: refuses unless `approved`. Runs legs dated today or earlier and leaves future legs `pending`. Records `nessie_id`, sets proposal `executed` or `failed`, writes trace events, and asks the gateway to post a confirmation ("Rent sent: $2,400 to Maple Court Apartments"). `run_due(today)` runs pending legs whose date has passed.
-  - Done when: rent day with Alex fronting Jordan creates Sam to Alex $800 now, the $2,400 landlord bill payment now, and Jordan to Alex $800 that runs only after `/demo/advance {to: "2026-12-16"}`.
+  - Done when: rent day with Xander fronting Kevin creates Julian to Xander $800 now, the $2,400 landlord bill payment now, and Kevin to Xander $800 that runs only after `/demo/advance {to: "2026-12-16"}`.
 - [ ] **D4. Brain read endpoints.** `GET /state` and `GET /bank/{rid}` exactly as in the contracts (coordinate with B on `main.py`).
 - [x] **D5. Bank app (Expo).** **Design replicates the Capital One mobile app look for the Capital One Nessie demo (team says Capital One approved this). No login or credential fields, and run it only through Expo Go (never publish to an app store or a public URL)**. Screens: roommate picker, then account (balance, scheduled payments, transactions newest first). Polls `/bank/{rid}` every 2 s; new transactions slide in and the balance animates. No login, no actions.
   - Done when: it runs in Expo Go on two phones over `--tunnel` and updates within 3 s of a "yes".
@@ -640,10 +640,10 @@ Scope for this pass (P0 only):
 
 Acceptance test (make it pass, add it as brain/tests/test_e2e.py):
 1. POST /demo/reset, then /demo/trigger {event:"rent_due"}.
-2. Jordan's personal agent answers "no"; house agent proposes Alex fronts Jordan.
+2. Kevin's personal agent answers "no"; house agent proposes Xander fronts Kevin.
 3. Replies "yes" from alex, sam, jordan via /chat approve it; treasurer executes.
-4. /bank/alex shows +$800 from Sam and -$2,400 to Maple Court Apartments.
-5. /demo/advance {to:"2026-12-16"} runs Jordan -> Alex $800.
+4. /bank/alex shows +$800 from Julian and -$2,400 to Maple Court Apartments.
+5. /demo/advance {to:"2026-12-16"} runs Kevin -> Xander $800.
 6. #group "can we afford a $1,200 couch?" yields a 3-month plan; 3 yeses execute it.
 
 Do not call any real API. Do not change the contracts. Keep functions small and typed.

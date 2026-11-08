@@ -26,19 +26,19 @@ House Rules lives directly inside your roommates' **iMessage and Telegram** chat
 Instead of waiting for rent to bounce, House Rules runs background solvency checks using deterministic financial health indicators (cash runway, days to payday, liquidity buffer).
 
 ### 2. Private Payday Fronting (Zero-Shame Bridge Financing)
-When rent is due (\$2,400 total / \$800 each) and a roommate (Jordan) cannot cover their share until payday (Dec 15):
+When rent is due (\$2,400 total / \$800 each) and a roommate (Kevin) cannot cover their share until payday (Dec 15):
 * **The Group Chat:** Receives a calm, green-light coordination message:
-  > *"🗓️ Rent for December is \$2,400 due Dec 1 (\$800 each). Sam sends share to Alex; Alex pays Maple Court Apartments. Jordan's share is covered via fronting plan until Dec 16. Reply 'yes' to approve."*
-  *(Sam never learns that Jordan was low on funds or that Jordan needed help).*
-* **Jordan's Private DM:** Receives reassuring, private assistance:
-  > *"Rent is \$800 due on the 1st, but your safe balance is tight until your Dec 15 payday. Alex's account will front your share now, and you will auto-repay Alex \$800 on Dec 16. Reply 'yes' to agree."*
-* **Alex's Private DM (The Fronter):** Receives explicit, respectful consent requests:
-  > *"Jordan's buffer is tight until his Dec 15 payday. Because you have a healthy cash reserve (\$4,200), the house plan proposes you front Jordan's \$800 share, with an automatic payback scheduled for Dec 16. Reply 'yes' to agree to front."*
+  > *"🗓️ Rent for December is \$2,400 due Dec 1 (\$800 each). Julian sends share to Xander; Xander pays Maple Court Apartments. Kevin's share is covered via fronting plan until Dec 16. Reply 'yes' to approve."*
+  *(Julian never learns that Kevin was low on funds or that Kevin needed help).*
+* **Kevin's Private DM:** Receives reassuring, private assistance:
+  > *"Rent is \$800 due on the 1st, but your safe balance is tight until your Dec 15 payday. Xander's account will front your share now, and you will auto-repay Xander \$800 on Dec 16. Reply 'yes' to agree."*
+* **Xander's Private DM (The Fronter):** Receives explicit, respectful consent requests:
+  > *"Kevin's buffer is tight until his Dec 15 payday. Because you have a healthy cash reserve (\$4,200), the house plan proposes you front Kevin's \$800 share, with an automatic payback scheduled for Dec 16. Reply 'yes' to agree to front."*
 
 ### 3. Group Affordability Solver (From "Awkward No" to "Actionable Plan")
 When someone asks: *"Can we afford a \$1,200 couch?"*, House Rules doesn't just check if the house has \$1,200 today. It runs `can_cover` against each roommate's cash buffer.
 * When \$400 upfront fails for one member, it tests extended horizons.
-* It proposes a **3-month installment plan (\$133.33/mo each)** where Alex purchases the couch upfront and roommates auto-reimburse Alex monthly.
+* It proposes a **3-month installment plan (\$133.33/mo each)** where Xander purchases the couch upfront and roommates auto-reimburse Xander monthly.
 
 ### 4. Autonomous Money Movement (Nessie Banking)
 Once all required owners reply `yes` (or 👍 in iMessage), the backend **Treasurer** moves real money through Capital One Nessie: P2P transfers, scheduled transfers, merchant purchases, and landlord bill pay.
@@ -73,7 +73,7 @@ We designed House Rules on a **Dual-Rail Architecture**: **code does the math an
 ```
 
 ### The 6 Core Primitives
-1. **Split (`split_bill`):** Pure arithmetic applying house rules (e.g., Rent equal; Sam pays 40% of electric for remote work).
+1. **Split (`split_bill`):** Pure arithmetic applying house rules (e.g., Rent equal; Julian pays 40% of electric for remote work).
 2. **Cover (`can_cover`):** Deterministic evaluation of checking balance, committed pending legs, and payday timing. Returns `ok` (buffer $\ge$ \$200), `tight` ($\ge$ \$0), or `no` (< \$0).
 3. **Plan (`payday_plan` & `group_affordability`):** Mathematical solver that resolves shortfalls via fronting pairing or multi-month installment schedules.
 4. **Propose (`create`):** State machine packaging bank actions into immutable `Leg` graphs with explicit approver lists.
@@ -95,7 +95,7 @@ We designed House Rules on a **Dual-Rail Architecture**: **code does the math an
 * Computes deterministic financial wellness indicators per roommate: `runway_days`, `rent_to_income`, `days_to_payday`, and `buffer_after(amount)`.
 * Demonstrates group financial health navigation: solving affordability without forcing overdrafts or high-interest predatory borrowing.
 
-* **Personal profiles and chat-set rules (A7 + A9, `docs/RULES_AND_PROFILES.md`):** each personal agent builds a private profile from that roommate's bank activity. Its inputs are payroll vs gig income, subscriptions renewing before payday, and indicators that update from money actually moved through Nessie. It also uses the cushion, savings goal and fronting limit the roommate sets in their DM. That profile drives the ok/tight/no answers and who fronts whom, while the group still sees only ok/tight/no. House rules like "Alex has the master, rent is 40/30/30" are set in chat and take effect only after everyone approves.
+* **Personal profiles and chat-set rules (A7 + A9, `docs/RULES_AND_PROFILES.md`):** each personal agent builds a private profile from that roommate's bank activity. Its inputs are payroll vs gig income, subscriptions renewing before payday, and indicators that update from money actually moved through Nessie. It also uses the cushion, savings goal and fronting limit the roommate sets in their DM. That profile drives the ok/tight/no answers and who fronts whom, while the group still sees only ok/tight/no. House rules like "Xander has the master, rent is 40/30/30" are set in chat and take effect only after everyone approves.
 
 ### 2. Photon (Best Use of Photon API)
 * Implemented via `spectrum-ts` on Node/Bun.
@@ -124,8 +124,8 @@ We designed House Rules on a **Dual-Rail Architecture**: **code does the math an
 
 ## 🧗 Challenges We Ran Into
 
-1. **The "Alex in the Loop" Consent Paradox:**
-   In early prototypes, when the bot noticed Jordan couldn't pay rent, it automatically selected Alex (who had a \$4,200 balance) to front Jordan and announced it in the group chat. We quickly realized this broke our own ethical thesis: Alex felt ambushed in public, and Jordan felt embarrassed. We solved this by implementing the **Dual-Rail Notification**: the group chat receives a discrete summary, while Jordan and Alex receive tailored private DMs asking for mutual, explicit consent.
+1. **The "Xander in the Loop" Consent Paradox:**
+   In early prototypes, when the bot noticed Kevin couldn't pay rent, it automatically selected Xander (who had a \$4,200 balance) to front Kevin and announced it in the group chat. We quickly realized this broke our own ethical thesis: Xander felt ambushed in public, and Kevin felt embarrassed. We solved this by implementing the **Dual-Rail Notification**: the group chat receives a discrete summary, while Kevin and Xander receive tailored private DMs asking for mutual, explicit consent.
 2. **Preventing LLM Financial Hallucination:**
    LLMs cannot be trusted with arithmetic or banking authorization. We instituted a strict policy: the LLM never computes numbers and never authorizes money movement. The state machine and financial math are 100% deterministic code. Outgoing LLM drafts are audited by a deterministic code gate before delivery.
 3. **Cross-Platform Parity:**

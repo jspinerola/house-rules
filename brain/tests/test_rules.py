@@ -7,7 +7,7 @@ from app import registry
 from contracts.models import LLMResult, ToolCall
 from tests.test_agent_loop import _script, real_agents  # noqa: F401  (fixture)
 
-MASTER = {"bill": "rent", "shares": {"Alex": 40, "Sam": 30, "Jordan": 30}, "reason": "Alex has the master bedroom"}
+MASTER = {"bill": "rent", "shares": {"Xander": 40, "Julian": 30, "Kevin": 30}, "reason": "Xander has the master bedroom"}
 
 
 def _call(name, **args):
@@ -25,7 +25,7 @@ def _rent_shares():
 
 def test_rule_previews_then_saves_after_everyone_agrees(real_agents, monkeypatch):
     _script(monkeypatch, [_call("propose_rule", **MASTER)])
-    [reply] = registry.get("house").on_message("alex", "alex has the master so rent should be 40/30/30")
+    [reply] = registry.get("house").on_message("alex", "xander has the master so rent should be 40/30/30")
     assert "$960" in reply.text and "$720" in reply.text
     [p] = registry.get("store").proposals()
     assert p.flow == "rule" and p.legs == [] and p.status == "pending"
@@ -35,13 +35,13 @@ def test_rule_previews_then_saves_after_everyone_agrees(real_agents, monkeypatch
     assert p.status == "executed"
     assert _rent_shares() == {"alex": 960, "sam": 720, "jordan": 720}
     rule = registry.get("store").house_rule("rent")
-    assert rule.source_text == "Alex has the master bedroom" and set(rule.confirmed_by) == {"alex", "sam", "jordan"}
+    assert rule.source_text == "Xander has the master bedroom" and set(rule.confirmed_by) == {"alex", "sam", "jordan"}
 
 
 def test_next_rent_uses_the_rule(real_agents, monkeypatch):
     _script(monkeypatch, [_call("propose_rule", **MASTER), _call("start_bill", bill="rent")])
     house = registry.get("house")
-    house.on_message("alex", "rent 40/30/30 since alex has the master")
+    house.on_message("alex", "rent 40/30/30 since xander has the master")
     _vote("alex", "sam", "jordan")
     house.on_message("alex", "lets do rent")
     rent = next(p for p in registry.get("store").proposals() if p.flow == "rent")
@@ -53,17 +53,17 @@ def test_pending_rent_keeps_its_split(real_agents, monkeypatch):
     _script(monkeypatch, [_call("start_bill", bill="rent"), _call("propose_rule", **MASTER)])
     house = registry.get("house")
     house.on_message("alex", "lets do rent")
-    [reply] = house.on_message("alex", "actually alex has the master, 40/30/30")
+    [reply] = house.on_message("alex", "actually xander has the master, 40/30/30")
     assert "keeps its current split" in reply.text
     rent = next(p for p in registry.get("store").proposals() if p.flow == "rent")
     assert next(leg for leg in rent.legs if leg.from_ == "sam").amount == 800
 
 
 @pytest.mark.parametrize("shares, error", [
-    ({"Alex": 60, "Sam": 50}, "more than 100%"),
-    ({"Alex": 40, "Sam": 30, "Jordan": 20}, "must add up to 100%"),
+    ({"Xander": 60, "Julian": 50}, "more than 100%"),
+    ({"Xander": 40, "Julian": 30, "Kevin": 20}, "must add up to 100%"),
     ({"Bob": 40}, "unknown roommate"),
-    ({"Alex": -5}, "percent from 0 to 100"),
+    ({"Xander": -5}, "percent from 0 to 100"),
 ])
 def test_invalid_rules_are_rejected_with_a_reason(real_agents, monkeypatch, shares, error):
     seen = _script(monkeypatch, [_call("propose_rule", bill="rent", shares=shares), LLMResult(text="Hmm, check that.")])
@@ -84,7 +84,7 @@ def test_removing_a_rule_needs_everyone(real_agents, monkeypatch):
     [reply] = registry.get("house").on_message("sam", "can we go back to an even electric split")
     assert "$50" in reply.text
     _vote("alex", "sam")
-    assert registry.get("store").house_rule("electric") is not None  # Jordan hasn't agreed yet
+    assert registry.get("store").house_rule("electric") is not None  # Kevin hasn't agreed yet
     _vote("jordan")
     assert registry.get("store").house_rule("electric") is None
     assert registry.get("tools").split_bill("electric", 150).shares == {"alex": 50, "sam": 50, "jordan": 50}

@@ -31,7 +31,7 @@ def test_executed_money_moves_the_indicators(real_agents):
     for rid in ("alex", "sam", "jordan"):
         registry.get("proposals").record_reply(rid, "yes")
     after = indicators.compute("alex")["runway_days"].value
-    assert after != before  # Alex paid Maple Court $2,400 through Nessie
+    assert after != before  # Xander paid Maple Court $2,400 through Nessie
 
 
 def test_cushion_turns_ok_into_tight(real_agents):
@@ -73,16 +73,16 @@ def test_release_never_carries_the_reason(real_agents):
 def test_private_profile_figures_stay_out_of_the_group(real_agents):
     auditor = registry.get("auditor")
     _prefs("sam", min_buffer=2500)
-    assert not auditor.check("Jordan makes $374.89 on the side.", set(), "group").ok
-    assert not auditor.check("Sam wants to keep $2,500.", set(), "group").ok
+    assert not auditor.check("Kevin makes $374.89 on the side.", set(), "group").ok
+    assert not auditor.check("Julian wants to keep $2,500.", set(), "group").ok
     assert auditor.check("You make about $374.89 a month from gigs.", {374.89}, "jordan").ok
-    assert auditor.check("Alex pays $45 for electric.", {45.0}, "group").ok  # same number, from a tool
+    assert auditor.check("Xander pays $45 for electric.", {45.0}, "group").ok  # same number, from a tool
 
 
 def test_dm_preference_is_saved_and_used(real_agents, monkeypatch):
     call = ToolCall(name="set_preference", args={"kind": "min_buffer", "value": 2500})
     _script(monkeypatch, [LLMResult(text="", tool_calls=[call]),
-                          LLMResult(text="Done, Sam. I'll keep at least $2,500 in your checking.")])
+                          LLMResult(text="Done, Julian. I'll keep at least $2,500 in your checking.")])
     [reply] = registry.get("personal").dm("sam", "im saving for japan, keep $2,500 in checking")
     assert "$2,500" in reply.text
     assert registry.get("store").get_preferences("sam").min_buffer == 2500

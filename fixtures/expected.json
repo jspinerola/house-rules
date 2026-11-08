@@ -458,9 +458,9 @@
   }
  },
  "scripts": {
-  "rent_group": "Rent for December is $2,400, due 2026-12-01: $800 each. Sam and Jordan send their share to Alex, then Alex pays Maple Court Apartments. Jordan can pay on 2026-12-16, so Alex fronts Jordan's share until then. Reply yes to approve.",
-  "rent_dm_jordan": "Rent is $800 and your payday is 2026-12-15, so Alex fronts your share now and you auto-repay Alex $800 on 2026-12-16. Reply yes to agree.",
-  "couch_group": "Up front ($400 each) doesn't work for everyone. Over 3 months it's $133.33/mo each: Alex ok, Sam ok, Jordan tight. Alex buys the $1,200 couch from Couch Co. now and Sam and Jordan pay Alex monthly. Reply yes to approve.",
+  "rent_group": "Rent for December is $2,400, due 2026-12-01: $800 each. Julian and Kevin send their share to Xander, then Xander pays Maple Court Apartments. Kevin can pay on 2026-12-16, so Xander fronts Kevin's share until then. Reply yes to approve.",
+  "rent_dm_jordan": "Rent is $800 and your payday is 2026-12-15, so Xander fronts your share now and you auto-repay Xander $800 on 2026-12-16. Reply yes to agree.",
+  "couch_group": "Up front ($400 each) doesn't work for everyone. Over 3 months it's $133.33/mo each: Xander ok, Julian ok, Kevin tight. Xander buys the $1,200 couch from Couch Co. now and Julian and Kevin pay Xander monthly. Reply yes to approve.",
   "hello_group": "Hi, I'm the house agent. Ask me things like \"can we afford a $1,200 couch?\"",
   "dm_default": "I'm your personal agent. I only share ok, tight or no with the house."
  }

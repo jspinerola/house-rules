@@ -31,10 +31,10 @@ def test_correct_rent_message_passes(use, mode):
 
 
 def test_jordan_310_blocked_in_group(use):
-    """Done-when: group draft with Jordan's $310 is blocked and traced."""
+    """Done-when: group draft with Kevin's $310 is blocked and traced."""
     _use_real(use)
     a = registry.get("auditor")
-    res = a.check("Jordan only has $310, so Alex fronts $800.", {800, 310}, "group")
+    res = a.check("Kevin only has $310, so Xander fronts $800.", {800, 310}, "group")
     assert not res.ok
     assert any("310" in r for r in res.reasons)
     assert ("auditor", "blocked") in _trace_pairs()
@@ -50,7 +50,7 @@ def test_income_blocked_in_group(use):
     """Income stays private in group even if it appears on the allowlist."""
     _use_real(use)
     res = registry.get("auditor").check(
-        "Alex makes $5800 a month.", {5800}, "group")
+        "Xander makes $5800 a month.", {5800}, "group")
     assert not res.ok
     assert any("5800" in r or "income" in r.lower() or "pay" in r.lower() for r in res.reasons)
 
@@ -64,7 +64,7 @@ def test_own_dm_allows_own_balance(use):
 def test_dm_blocks_other_roommate_balance(use):
     _use_real(use)
     res = registry.get("auditor").check(
-        "Alex has $4200 in checking.", {4200}, "jordan")
+        "Xander has $4200 in checking.", {4200}, "jordan")
     assert not res.ok
 
 
@@ -80,10 +80,10 @@ def test_speak_falls_back_after_two_blocks(use, monkeypatch):
 
     class LeakyLLM:
         def chat(self, messages, tools=None):
-            return LLMResult(text="Jordan only has $310 left.")
+            return LLMResult(text="Kevin only has $310 left.")
 
     monkeypatch.setitem(registry._cache, ("llm", registry.mode("llm")), LeakyLLM())
     out = voice.speak(
-        "house", "rent", "Jordan only has $310 left.", {800}, "group")
+        "house", "rent", "Kevin only has $310 left.", {800}, "group")
     assert out == voice.SAFE
     assert ("auditor", "fallback") in _trace_pairs()

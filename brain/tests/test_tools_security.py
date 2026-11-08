@@ -41,7 +41,7 @@ def test_deterministic_across_calls(tools):
 
 def test_can_cover_only_uses_that_roommate_balance(tools):
     before = tools.can_cover("jordan", 800, "2026-11-30")
-    # Drain Alex's ledger; Jordan's cover must not move.
+    # Drain Xander's ledger; Kevin's cover must not move.
     registry.get("nessie").purchase("alex", "Poison Co", 4000, "isolation probe")
     after = tools.can_cover("jordan", 800, "2026-11-30")
     assert after == before
@@ -85,7 +85,7 @@ def test_split_shares_sum_to_amount(tools):
 
 
 def test_cover_thresholds(tools):
-    # Alex $4200, no payday credited when by == today before Dec 1.
+    # Xander $4200, no payday credited when by == today before Dec 1.
     today = registry.get("store").today()
     assert tools.can_cover("alex", 4000, today).level == "ok"       # 200 left
     assert tools.can_cover("alex", 4100, today).level == "tight"    # 100 left

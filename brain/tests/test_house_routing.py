@@ -106,4 +106,4 @@ def test_wording_gets_persona_and_chat_context(real_house, monkeypatch):
     registry.get("house").on_message("sam", "morning house")
     system, user = seen[-1][0]["content"], seen[-1][-1]["content"]
     assert "house manager" in system
-    assert "Sam: morning house" in user
+    assert "Julian: morning house" in user

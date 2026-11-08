@@ -24,7 +24,7 @@ def test_split_rounding_cents_land_on_one_person(tools):
 
 
 def test_cover_counts_paydays_before_the_date(tools):
-    # After Jordan's 12-15 paycheck, $800 is coverable.
+    # After Kevin's 12-15 paycheck, $800 is coverable.
     assert tools.can_cover("jordan", 800, "2026-12-15").level != "no"
 
 

@@ -24,7 +24,7 @@ Photon's WhatsApp Business provider is 1:1 only. Its space schema is just `{ id 
 Telegram group ── "rent's due soon" ──▶ gateway ──ChatIn{chat_type:"group", sender_handle:+1…}──▶ brain
                                            │                                                       │
 Telegram group ◀── house reply ────────────┤◀── replies: [{target: group}, {target: dm, jordan}] ──┘
-iMessage DM (Jordan) ◀── personal reply ───┘
+iMessage DM (Kevin) ◀── personal reply ───┘
 ```
 
 ### Inbound
@@ -86,13 +86,13 @@ Telegram's webhook registers automatically through Photon, using the same `SPECT
    curl -s -X POST localhost:8000/demo/trigger -H 'content-type: application/json' -d '{"event":"rent_due"}'
    ```
    - **Telegram group:** the house agent posts the rent split. It contains no balances, only who's ok and when.
-   - **Jordan's iMessage:** the personal agent privately says Alex fronts Jordan's share until payday.
+   - **Kevin's iMessage:** the personal agent privately says Xander fronts Kevin's share until payday.
 2. **Approve.** Everyone replies "yes", in the group or in their DM. The treasurer executes, and the group gets the confirmation.
 3. **Payday:**
    ```bash
    curl -s -X POST localhost:8000/demo/advance -H 'content-type: application/json' -d '{"to":"2026-12-16"}'
    ```
-   Jordan's $800 goes back to Alex.
+   Kevin's $800 goes back to Xander.
 4. **Couch, in the group:** "can we afford a $1,200 couch?" The house agent answers with a 3-month plan, and three yeses execute it.
 5. **Bank app:** keep it open in a browser or Expo Go to show the money moving live.
 
@@ -120,6 +120,6 @@ What the new tests cover:
 - With no group yet, the iMessage relay is the fallback.
 
 ## Known limits
-- **Sam's iMessage DMs** still need Sam's number added to the Photon project ("Target not allowed for this project"). Sam can take full part in the Telegram group in the meantime.
+- **Julian's iMessage DMs** still need Julian's number added to the Photon project ("Target not allowed for this project"). Julian can take full part in the Telegram group in the meantime.
 - **One house group per gateway.** To move to a different group, delete `group` from `gateway/spaces.photon.json` and restart.
 - **Telegram tapback approvals** (👍 reactions) aren't wired up. That's C7 in SPEC, P1.

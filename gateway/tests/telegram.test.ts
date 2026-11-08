@@ -122,14 +122,14 @@ test("house replies go only to the telegram group; personal replies go to iMessa
       ? {
           replies: [
             { target: { type: "group" }, text: "Rent is $800 each." },
-            { target: { type: "dm", roommate_id: "jordan" }, text: "Alex fronts your share." },
+            { target: { type: "dm", roommate_id: "jordan" }, text: "Xander fronts your share." },
           ],
         }
       : { replies: [] };
   const { serve } = setup([...hiAll(d), [group, tmsg(TG_IDS.alex, "rent's due soon")]]);
   await serve();
   assert.deepEqual(group.sent, ["Rent is $800 each."]);
-  assert.deepEqual(d.jordan.sent, ["Alex fronts your share."]);
+  assert.deepEqual(d.jordan.sent, ["Xander fronts your share."]);
   for (const r of RIDS) assert.ok(!d[r].sent.some((t) => t.startsWith(HOUSE_PREFIX)), `${r} got a relay copy`);
 });
 

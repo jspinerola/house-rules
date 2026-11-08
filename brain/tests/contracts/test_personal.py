@@ -44,7 +44,7 @@ def test_jordan_dm_explains_fronting(use, mode):
     registry.get("house").on_event("rent_due")
     p = registry.get("store").proposals()[0]
     replies = registry.get("personal").explain("jordan", p)
-    assert replies and "Alex" in replies[0].text and "2026-12-16" in replies[0].text
+    assert replies and "Xander" in replies[0].text and "2026-12-16" in replies[0].text
 
 
 @impl_params("personal")
@@ -53,7 +53,7 @@ def test_alex_dm_explains_fronting(use, mode):
     registry.get("house").on_event("rent_due")
     p = registry.get("store").proposals()[0]
     replies = registry.get("personal").explain("alex", p)
-    assert replies and "Jordan" in replies[0].text and "2026-12-16" in replies[0].text
+    assert replies and "Kevin" in replies[0].text and "2026-12-16" in replies[0].text
 
 
 def test_alex_sam_ask_ok_no_date(use):
@@ -95,7 +95,7 @@ def test_dm_blocks_leak_via_speak(use, monkeypatch):
 
     class LeakyLLM:
         def chat(self, messages, tools=None):
-            return LLMResult(text="Alex has $4,200 in checking.")
+            return LLMResult(text="Xander has $4,200 in checking.")
 
     monkeypatch.setitem(registry._cache, ("llm", registry.mode("llm")), LeakyLLM())
     replies = registry.get("personal").dm("jordan", "what's my balance?")

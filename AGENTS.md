@@ -64,7 +64,7 @@ Specialists are **tools** the house agent calls (`split_bill`, `group_affordabil
 - **Everyone approves** — rent goes out only when all shares are confirmed.
 - **Small amounts** (P1) — under $20 auto-approve after a 1-hour veto window.
 - **Private nudges** — late payer gets a DM, never a public callout.
-- **House rules** — a rule set in chat ("Alex has the master, rent is 40/30/30") is a `rule` proposal; everyone approves; no money moves, so the treasurer is not called.
+- **House rules** — a rule set in chat ("Xander has the master, rent is 40/30/30") is a `rule` proposal; everyone approves; no money moves, so the treasurer is not called.
 - **Personal preferences** — cushion, savings goal, front cap and notes are set by that roommate in their DM, apply immediately, and never leave that DM. Design: `docs/RULES_AND_PROFILES.md`.
 
 Yes parsing: `yes` | `y` | `yep` | `ok` | `approve` | 👍. No: `no` | `n` | `nah` | `cancel`.
@@ -125,8 +125,8 @@ Expected results (pytest must lock these):
 
 - Rent split = $800 each.
 - `can_cover(jordan, 800, 2026-11-30)` → no; earliest `2026-12-15`.
-- Electric $150 → Sam $60, Alex $45, Jordan $45.
-- Couch $400 up front: Alex ok, Sam ok, Jordan no. Over 3 months → Jordan tight → propose 3-month plan.
+- Electric $150 → Julian $60, Xander $45, Kevin $45.
+- Couch $400 up front: Xander ok, Julian ok, Kevin no. Over 3 months → Kevin tight → propose 3-month plan.
 
 ### Brain HTTP (`:8000`)
 
@@ -251,10 +251,10 @@ Never commit `.env`. Use `.env.example`.
 With all mocks on:
 
 1. `POST /demo/reset`, then `/demo/trigger` `{event:"rent_due"}`.
-2. Jordan personal agent → no; house proposes Alex fronts Jordan.
+2. Kevin personal agent → no; house proposes Xander fronts Kevin.
 3. `/chat` yes from alex, sam, jordan → treasurer executes.
-4. `/bank/alex` shows +$800 from Sam and −$2,400 to Maple Court Apartments.
-5. `/demo/advance` `{to:"2026-12-16"}` runs Jordan → Alex $800.
+4. `/bank/alex` shows +$800 from Julian and −$2,400 to Maple Court Apartments.
+5. `/demo/advance` `{to:"2026-12-16"}` runs Kevin → Xander $800.
 6. `#group can we afford a $1,200 couch?` → 3-month plan; three yeses execute it.
 
 Lock this in `brain/tests/test_e2e.py`.

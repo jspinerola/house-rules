@@ -41,7 +41,7 @@ export type HouseRule = {
   id: string;
   bill_type: string; // "rent" | "electric" | "purchase"
   split: Record<string, number>; // roommate_id -> fraction; the rest split evenly
-  source_text: string; // the reason, e.g. "Alex has the master bedroom"
+  source_text: string; // the reason, e.g. "Xander has the master bedroom"
   confirmed_by: string[];
 };
 

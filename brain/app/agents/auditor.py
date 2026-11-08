@@ -3,7 +3,7 @@
 Blocks (1) any number not in `allowed_numbers` (gathered from this turn's tool outputs) and
 (2) any roommate's balance or income in a group message, or another roommate's in a DM.
 Profile figures (side income, recurring charges, preference amounts) are private too, but only block when they are
-not also a tool output this turn (Jordan's $45 phone plan vs Alex's $45 electric share).
+not also a tool output this turn (Kevin's $45 phone plan vs Xander's $45 electric share).
 Dates ("2026-12-16", "12/16", "16th") are not amounts and are ignored.
 Builds on the workshop's wellness/validation.py idea of checking numbers before explaining.
 """

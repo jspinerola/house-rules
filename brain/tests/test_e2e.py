@@ -58,8 +58,8 @@ def rent_day(c: TestClient) -> dict:
     dms = [r for r in sent if r["target"] == {"type": "dm", "roommate_id": "jordan"}]
     alex_dms = [r for r in sent if r["target"] == {"type": "dm", "roommate_id": "alex"}]
     assert group and "$800" in group[0]["text"] and "$2,400" in group[0]["text"]
-    assert dms and "Alex" in dms[0]["text"]  # Jordan hears about fronting privately
-    assert alex_dms and "Jordan" in alex_dms[0]["text"]  # Alex hears about fronting privately
+    assert dms and "Xander" in dms[0]["text"]  # Kevin hears about fronting privately
+    assert alex_dms and "Kevin" in alex_dms[0]["text"]  # Xander hears about fronting privately
     [p] = c.get("/state").json()["proposals"]
     assert p["flow"] == "rent" and p["status"] == "pending"
     return p
@@ -84,10 +84,10 @@ def test_rent_day(client):
 
     bank = client.get("/bank/alex").json()
     descs = [(t["description"], t["amount"]) for t in bank["transactions"][:5]]
-    assert any("Sam" in d and a == 800 for d, a in descs), descs
+    assert any("Julian" in d and a == 800 for d, a in descs), descs
     assert any("Maple Court Apartments" in d and a == -2400 for d, a in descs), descs
     assert bank["balance"] == 2600
-    assert bank["scheduled"] == [{"date": "2026-12-16", "description": "From Jordan", "amount": 800}]
+    assert bank["scheduled"] == [{"date": "2026-12-16", "description": "From Kevin", "amount": 800}]
     assert st["owes"] == [{"from": "jordan", "to": "alex", "amount": 800, "due": "2026-12-16"}]
     assert_no_private_numbers_in_group(outbox())
 
@@ -104,7 +104,7 @@ def test_payday_fronting(client):
     assert (leg["from"], leg["to"], leg["amount"], leg["status"]) == ("jordan", "alex", 800, "done")
 
     alex = client.get("/bank/alex").json()
-    assert any("Jordan" in t["description"] and t["amount"] == 800 for t in alex["transactions"][:5])
+    assert any("Kevin" in t["description"] and t["amount"] == 800 for t in alex["transactions"][:5])
     jordan = client.get("/bank/jordan").json()
     assert jordan["balance"] == 310 + 1350 - 800
     st = client.get("/state").json()
@@ -129,7 +129,7 @@ def test_couch(client):
     assert p["status"] == "executed"
     alex = client.get("/bank/alex").json()
     assert any("Couch Co." in t["description"] and t["amount"] == -1200 for t in alex["transactions"][:5])
-    assert len(alex["scheduled"]) == 4  # two more months from Sam and Jordan
+    assert len(alex["scheduled"]) == 4  # two more months from Julian and Kevin
     assert client.get("/bank/jordan").json()["balance"] == 176.67
 
 
