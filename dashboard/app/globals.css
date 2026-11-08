@@ -1,62 +1,69 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: var(--font-bricolage), ui-sans-serif, sans-serif;
-  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+  --font-sans: var(--font-onest), ui-sans-serif, system-ui, sans-serif;
 
-  --color-ink: #070d10;
-  --color-panel: #0d1a1f;
-  --color-panel-2: #12242b;
-  --color-line: #1f3a43;
-  --color-fog: #8fa9b0;
-  --color-paper: #e9f2ef;
+  --color-paper: #ffffff;
+  --color-mist: #f4f6f8;
+  --color-ink: #14171c;
+  --color-slate: #667085;
+  --color-hairline: #e4e7ec;
 
-  --color-ok: #3ddc97;
-  --color-tight: #f5b942;
-  --color-no: #ff5d6c;
+  --color-ok: #16a34a;
+  --color-tight: #e5a000;
+  --color-no: #e5484d;
 
-  --color-house: #38d3f0;
-  --color-alex: #b49cff;
-  --color-sam: #d78bff;
-  --color-jordan: #8f9cff;
-  --color-treasurer: #ffd166;
-  --color-auditor: #ff7a9a;
-  --color-watcher: #b6f05a;
+  /* One identity color per roommate, keyed by id (ids stay alex/sam/jordan). */
+  --color-alex: #3366ff;
+  --color-sam: #f2694b;
+  --color-jordan: #14a3a3;
 
-  --animate-slide-in: slide-in 520ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
-  --animate-rise: rise 600ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-  --animate-flash: flash 1200ms ease-out;
+  --animate-draw: draw 1100ms cubic-bezier(0.65, 0, 0.35, 1) both;
+  --animate-pop: pop 520ms cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+  --animate-enter: enter 380ms ease-out both;
+  --animate-tick: tick 1400ms ease-out;
 
-  @keyframes slide-in {
-    from { opacity: 0; transform: translateX(-28px) scale(0.98); }
+  @keyframes draw {
+    from { stroke-dashoffset: var(--len, 1000); }
+    to { stroke-dashoffset: 0; }
+  }
+  @keyframes pop {
+    from { opacity: 0; transform: scale(0.6); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes enter {
+    from { opacity: 0; transform: translateY(-4px); }
     to { opacity: 1; transform: none; }
   }
-  @keyframes rise {
-    from { opacity: 0; transform: translateY(18px); }
-    to { opacity: 1; transform: none; }
-  }
-  @keyframes flash {
-    0% { color: var(--color-treasurer); text-shadow: 0 0 24px rgb(255 209 102 / 0.7); }
-    100% { color: inherit; text-shadow: none; }
+  @keyframes tick {
+    0% { background-color: rgb(51 102 255 / 0.14); }
+    100% { background-color: transparent; }
   }
 }
 
 html {
-  font-size: 20px;
+  font-size: 16px;
+}
+
+@media (min-width: 1600px) {
+  html { font-size: 18px; }
 }
 
 body {
-  background-color: var(--color-ink);
-  background-image:
-    radial-gradient(1200px 600px at 12% -10%, rgb(56 211 240 / 0.13), transparent 60%),
-    radial-gradient(900px 500px at 100% 110%, rgb(180 156 255 / 0.12), transparent 60%),
-    linear-gradient(rgb(31 58 67 / 0.25) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(31 58 67 / 0.25) 1px, transparent 1px);
-  background-size: auto, auto, 48px 48px, 48px 48px;
-  background-attachment: fixed;
-  color: var(--color-paper);
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-feature-settings: "tnum" 1, "cv11" 1;
 }
 
-@media (max-width: 640px) {
-  html { font-size: 16px; }
+:focus-visible {
+  outline: 2px solid var(--color-alex);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+  }
 }

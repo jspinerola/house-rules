@@ -1,16 +1,15 @@
 import type { ReactNode } from "react";
-import { Bricolage_Grotesque, JetBrains_Mono } from "next/font/google";
+import { Onest } from "next/font/google";
 import "./globals.css";
 
-const display = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-bricolage" });
-const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains" });
+const onest = Onest({ subsets: ["latin"], variable: "--font-onest" });
 
-export const metadata = { title: "House Rules - house view" };
+export const metadata = { title: "House Rules", description: "Your household, on the same page about money." };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${mono.variable}`}>
-      <body className="min-h-screen font-display antialiased">{children}</body>
+    <html lang="en" className={onest.variable}>
+      <body className="min-h-screen font-sans antialiased">{children}</body>
     </html>
   );
 }

@@ -66,21 +66,4 @@ export function usePoll<T>(path: string, ms: number, enabled = true): { data: T 
 const usd = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 export const money = (n: number) => usd.format(n);
 
-export type ThreadLine = { ts: string; agent: TraceEvent["agent"]; text: string };
-
-const GROUP_PREFIX = "to group: ";
-
-/** Group replies logged by the agents' voice step (relay mode fallback), oldest first. */
-export function threadFromTrace(trace: TraceEvent[]): ThreadLine[] {
-  return trace
-    .filter((e) => e.event === "replied" && e.detail.startsWith(GROUP_PREFIX))
-    .map((e) => ({ ts: e.ts, agent: e.agent, text: e.detail.slice(GROUP_PREFIX.length) }))
-    .reverse();
-}
-
 export const traceKey = (e: TraceEvent) => `${e.ts}|${e.agent}|${e.event}|${e.detail}`;
-
-export function clock(ts: string): string {
-  const d = new Date(ts);
-  return Number.isNaN(d.getTime()) ? ts : d.toLocaleTimeString("en-US", { hour12: false });
-}
