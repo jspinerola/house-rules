@@ -41,9 +41,11 @@ Living with roommates means sharing money with people whose finances you can't s
 - **Privacy by design.** The group only ever sees ok, tight, no or a date. DMs carry the reasons. The dashboard, which goes on a public projector, says a private message was sent but never shows what it said.
 - **Safe by default.** The house never asks yes/no questions, because "yes" approves proposals. Agents can't claim an approval or a rule that a tool didn't record. Paid bills roll to the next month instead of being proposed twice.
 
-## How each track is addressed
+## Tracks
 
-### PNC: 360° Financial Health Navigator
+We're entered in three sponsor tracks (PNC, Capital One, Photon), the MLH xAI track, and the general Virality track.
+
+### Sponsor track: PNC 360° Financial Health Navigator
 
 *"How could AI help someone see their whole financial picture, make sense of it & feel confident about their next move?"*
 
@@ -58,7 +60,7 @@ Living with roommates means sharing money with people whose finances you can't s
 
 It follows the PNC workshop rule: **code does the math, the LLM explains, validate before explaining.** It builds on the workshop toolkit (`wellness/metrics.py`, `profile.py`, `tools.py`, `validation.py`, `llm.py`) rather than rewriting it.
 
-### Capital One: Best Use of Nessie
+### Sponsor track: Capital One Best Use of Nessie
 
 Every money movement is a real Nessie API call, made by the treasurer and only after approval (`brain/app/nessie.py`, `brain/app/treasurer.py`):
 
@@ -72,7 +74,7 @@ Every money movement is a real Nessie API call, made by the treasurer and only a
 
 The money that moves through Nessie feeds back into each roommate's indicators, so the financial picture stays current. The **Harbor Bank** app (Expo) shows each roommate's live balance, scheduled payments and transactions, plus a "What your agent knows" card.
 
-### Photon: Build a Messaging Agent
+### Sponsor track: Photon, Build a Messaging Agent
 
 *"AI isn't a utility tool but a being that lives with us."*
 
@@ -86,13 +88,16 @@ The money that moves through Nessie feeds back into each roommate's indicators, 
   - Agents never ask yes/no questions, and can't claim approvals that weren't recorded.
   - Personal agents refuse to set house rules.
 
-### SpaceXSI: Make It Legendary (Cursor + Grok Bot)
+### MLH track: xAI (Grok)
 
-- **Cursor** is the team's core coding agent (`.cursorrules`).
-- **Grok Bot automation** runs on every pull request. `.github/workflows/grok-review.yml` sends the diff to Grok, which posts a summary and risk flags as a PR comment: leaked keys, hardcoded balances, and money moved without approval.
-- **Grok in the product.** Grok (`grok-4.20-0309-non-reasoning`, using tool calling) powers the house and personal agents.
+Grok is in the product and in how we build it:
 
-### Virality: build something people can't wait to share
+- **Grok runs every agent.** The house agent and each personal agent run a Grok tool-calling loop (`grok-4.20-0309-non-reasoning`, through xAI's OpenAI-compatible API, in `brain/app/agents/loop.py`). Grok decides which tools to call: house status, splits, what-ifs, private "can you cover this?" checks, rule votes and payment proposals. Then it explains the results in each agent's voice. Code does the math, and the auditor checks every number Grok writes.
+- **Grok handles messy language.** It turns "can we afford a 1200 couch", "xander pays half since it's in his room" and "keep at least $1,000 in my checking" into typed tool calls. If a Grok call times out (8 s), the agent falls back to a scripted reply and logs it, so the conversation never stalls.
+- **Grok Bot reviews every PR.** `.github/workflows/grok-review.yml` sends each pull request's diff to Grok, which comments with a summary and risk flags: leaked keys, hardcoded balances, and money moved without approval.
+- **Built with Cursor.** Cursor is the team's core coding agent (`.cursorrules`), which also qualifies us for the SpaceXSI raffle.
+
+### General track: Virality
 
 **The hook:** "Our group chat has an AI that makes rent fair, and nobody has to say how broke they are." Every shared household has the rent-day fight; House Rules ends it in three yeses.
 
