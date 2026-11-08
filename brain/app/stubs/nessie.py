@@ -2,10 +2,19 @@
 from __future__ import annotations
 
 import itertools
+import math
 
 from contracts.models import BankTxn, Scenario
 
 from .. import fixtures, registry
+
+
+def _money(amount: float, label: str = "amount") -> float:
+    if not isinstance(amount, (int, float)) or isinstance(amount, bool) or not math.isfinite(amount):
+        raise ValueError(f"{label} must be a finite number")
+    if amount < 0:
+        raise ValueError(f"{label} must be >= 0")
+    return float(amount)
 
 
 class StubNessie:
@@ -31,21 +40,31 @@ class StubNessie:
         return nid
 
     def balance(self, rid: str) -> float:
+        if rid not in self._balance:
+            raise KeyError(f"unknown roommate {rid!r}")
         return self._balance[rid]
 
     def transactions(self, rid: str) -> list[BankTxn]:
+        if rid not in self._txns:
+            raise KeyError(f"unknown roommate {rid!r}")
         return sorted(self._txns[rid], key=lambda t: (t.date, t.id), reverse=True)
 
     def transfer(self, from_rid: str, to_rid: str, amount: float, description: str) -> str:
+        amount = _money(amount)
+        if to_rid not in self._balance:
+            raise KeyError(f"unknown roommate {to_rid!r}")
         nid = self._post(from_rid, -amount, f"Transfer to {self._names[to_rid]}: {description}")
         self._post(to_rid, amount, f"Transfer from {self._names[from_rid]}: {description}")
         return nid
 
     def pay_bill(self, rid: str, payee: str, amount: float, date: str) -> str:
+        amount = _money(amount)
         return self._post(rid, -amount, f"Bill payment - {payee}")
 
     def purchase(self, rid: str, merchant: str, amount: float, description: str) -> str:
+        amount = _money(amount)
         return self._post(rid, -amount, f"Purchase - {merchant}: {description}")
 
     def deposit(self, rid: str, amount: float, description: str) -> str:
+        amount = _money(amount)
         return self._post(rid, amount, description)
