@@ -9,6 +9,12 @@ ALL_STUB = {env: "stub" for env in registry.ENV.values()}
 ALL_REAL = {**{env: "real" for env in registry.ENV.values()},
             "NESSIE_MODE": "stub", "LLM_MODE": "stub", "OUTBOX_MODE": "stub"}
 
+# REQUIREMENTS integration checkpoints (flag flips on main).
+# I1: real numbers from Store + Indicators + Tools; everything else stubbed.
+I1 = {**ALL_STUB, "DB_MODE": "sqlite", "INDICATORS_MODE": "real", "TOOLS_MODE": "real"}
+# I4: I3 stack real (ALL_REAL) + live Nessie. LLM/outbox stay stub; gateway is not a brain flag.
+I4 = {**ALL_REAL, "NESSIE_MODE": "live"}
+
 
 @pytest.fixture(autouse=True)
 def _isolated(monkeypatch, tmp_path):
