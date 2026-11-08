@@ -1,11 +1,27 @@
 // Photon mode (C2–C6): spectrum-ts iMessage <-> brain POST /chat, plus POST /send and GET /health.
-// Shared pool numbers are DM-only, so set GATEWAY_FANOUT=1 to relay group replies to all 3 DMs.
-import { Spectrum } from "spectrum-ts";
+// Personal agents live in iMessage DMs. The house agent lives in a Telegram group when
+// TELEGRAM_BOT_TOKEN is set; without one, GATEWAY_FANOUT=1 relays group replies to all 3 DMs.
+import { Spectrum, type Space } from "spectrum-ts";
 import { imessage } from "spectrum-ts/providers/imessage";
+import { telegram } from "spectrum-ts/providers/telegram";
 import type { ChatIn, Reply } from "../../contracts/types.js";
-import { Gateway, maskHandle, normalizeHandle, roommateFromHandle, type GatewayOpts } from "./shared.js";
+import {
+  Gateway,
+  maskHandle,
+  normalizeHandle,
+  ROOMMATES,
+  roommateFromHandle,
+  type GatewayOpts,
+  type RoommateId,
+} from "./shared.js";
 
 export const NOT_IN_HOUSE = "Sorry, this number isn't in the house.";
+export const TELEGRAM_PRIVATE =
+  "I only work in the house group. Your private agent is in your iMessage DMs.";
+export const OTHER_HOUSE = "This bot belongs to another house.";
+
+/** Stored space ids for Telegram chats carry this prefix so sends pick the right provider. */
+export const TG = "tg:";
 
 /** The slice of a spectrum Space we use, so tests can pass fakes. */
 export interface SpaceLike {
@@ -18,7 +34,8 @@ export interface SpaceLike {
 export interface MessageLike {
   readonly id: string;
   direction: "inbound" | "outbound";
-  sender: { readonly id: string; readonly kind?: "agent" } | undefined;
+  platform?: string; // "imessage" | "telegram"; missing means iMessage
+  sender: { readonly id: string; readonly kind?: "agent"; readonly handle?: string } | undefined;
   content: { type: string };
   timestamp: Date;
 }
@@ -33,14 +50,30 @@ export type PhotonDeps<S extends SpaceLike> = {
 // Shared pool has no group chat: a DM starting with #house / #group / @house speaks to the house.
 const HOUSE_TAG = /^\s*(?:#house|#group|@house)\b[\s:,]*/i;
 
+/** Map a Telegram sender to a roommate via ALEX_/SAM_/JORDAN_TELEGRAM (numeric id or @username). */
+export function roommateFromTelegram(sender: { id: string; handle?: string }): RoommateId | null {
+  const username = sender.handle?.toLowerCase();
+  for (const rid of ROOMMATES) {
+    const want = process.env[`${rid.toUpperCase()}_TELEGRAM`]?.trim().toLowerCase();
+    if (!want) continue;
+    if (want === sender.id || (username && want.replace(/^@/, "") === username)) return rid;
+  }
+  return null;
+}
+
+/** The handle the brain knows this roommate by (fixtures default to sim:<id>). */
+const brainHandle = (rid: RoommateId): string =>
+  process.env[`${rid.toUpperCase()}_HANDLE`]?.trim() || `sim:${rid}`;
+
 const textOf = (m: MessageLike): string | null =>
   m.content.type === "text" && "text" in m.content && typeof m.content.text === "string"
     ? m.content.text
     : null;
 
 export function createPhotonGateway<S extends SpaceLike>(deps: PhotonDeps<S>, opts: GatewayOpts = {}) {
-  const cache = new Map<string, S>();
-  const remember = (space: S) => (cache.set(space.id, space), space);
+  const cache = new Map<string, S>(); // keyed by stored space id (tg:-prefixed for Telegram)
+  const remember = (space: S, key = space.id) => (cache.set(key, space), space);
+  const hinted = new Set<string>(); // Telegram senders / groups already told why they're ignored
 
   const sendToSpace = async (spaceId: string, text: string) => {
     const space = cache.get(spaceId) ?? remember(await deps.getSpace(spaceId));
@@ -81,11 +114,68 @@ export function createPhotonGateway<S extends SpaceLike>(deps: PhotonDeps<S>, op
     deliver,
   });
 
+  // Typing is best effort: some recipients (SMS / no iMessage) reject it.
+  async function respond(space: S, rid: RoommateId, chatIn: ChatIn): Promise<void> {
+    let started = false;
+    const work = async () => {
+      started = true;
+      await gateway.handleInbound(chatIn);
+    };
+    try {
+      await space.responding(work);
+    } catch (e) {
+      if (started) throw e;
+      console.warn(`typing unavailable for ${rid} (${(e as Error).message}); replying without it`);
+      await work();
+    }
+  }
+
+  // Telegram: the house group only. Private chats with the bot point people to iMessage.
+  async function handleTelegram(space: S, message: MessageLike, text: string): Promise<void> {
+    const sender = message.sender!;
+    const key = `${TG}${space.id}`;
+    const messageId = `${key}:${message.id}`; // Telegram message ids are only unique per chat
+    if (gateway.seen.has(messageId)) return;
+    remember(space, key);
+
+    const once = async (hintKey: string, reply: string) => {
+      gateway.seen.add(messageId);
+      if (hinted.has(hintKey)) return;
+      hinted.add(hintKey);
+      await space.send(reply);
+    };
+    if (!space.id.startsWith("-")) return once(`private:${space.id}`, TELEGRAM_PRIVATE);
+    if (gateway.spaces.group && gateway.spaces.group !== key) {
+      console.warn(`telegram group ${space.id} is not the house group; ignored`);
+      return once(`group:${space.id}`, OTHER_HOUSE);
+    }
+    const rid = roommateFromTelegram(sender);
+    if (!rid) {
+      const who = sender.handle ? `@${sender.handle}` : "you";
+      console.warn(`unknown telegram sender ${sender.id}; set ALEX_/SAM_/JORDAN_TELEGRAM`);
+      return once(`sender:${sender.id}`,
+        `I don't know ${who} yet (Telegram id ${sender.id}). Add it as ALEX_TELEGRAM, SAM_TELEGRAM or JORDAN_TELEGRAM.`);
+    }
+    if (!gateway.spaces.group) {
+      gateway.registerGroup(key);
+      console.log(`registered house group: telegram ${space.id}`);
+    }
+    await respond(space, rid, {
+      chat_type: "group",
+      sender_handle: brainHandle(rid),
+      text: text.replace(HOUSE_TAG, ""),
+      message_id: messageId,
+      ts: message.timestamp.toISOString(),
+    });
+  }
+
   async function handle(space: S, message: MessageLike): Promise<void> {
     if (message.direction === "outbound" || message.sender?.kind === "agent") return;
     const text = textOf(message);
     if (text === null) return; // reactions, typing, attachments
     if (!message.sender) return console.warn(`message ${message.id} has no sender; skipped`);
+    if (message.platform === "telegram") return handleTelegram(space, message, text);
+    if (message.platform && message.platform !== "imessage") return;
     if (gateway.seen.has(message.id)) return;
 
     remember(space);
@@ -114,19 +204,7 @@ export function createPhotonGateway<S extends SpaceLike>(deps: PhotonDeps<S>, op
       message_id: message.id,
       ts: message.timestamp.toISOString(),
     };
-    // Typing is best effort: some recipients (SMS / no iMessage) reject it.
-    let started = false;
-    const work = async () => {
-      started = true;
-      await gateway.handleInbound(chatIn);
-    };
-    try {
-      await space.responding(work);
-    } catch (e) {
-      if (started) throw e;
-      console.warn(`typing unavailable for ${rid} (${(e as Error).message}); replying without it`);
-      await work();
-    }
+    await respond(space, rid, chatIn);
   }
 
   async function serve(): Promise<void> {
@@ -153,27 +231,59 @@ export async function run(): Promise<void> {
     throw new Error(`GATEWAY_MODE=photon needs ${missing.join(" and ")} (set in the repo-root .env)`);
   }
 
-  const app = await Spectrum({ projectId, projectSecret, providers: [imessage.config()] });
-  const im = imessage(app);
-  const { gateway, serve } = createPhotonGateway({
-    messages: app.messages,
-    spaceType: (space) => imessage(space).type,
-    getSpace: (id) => im.space.get(id),
-    openDm: (handle) => im.space.create(handle),
-  });
+  const { deps, stop, providers } = await connect(projectId, projectSecret, process.env.TELEGRAM_BOT_TOKEN?.trim());
+  const { gateway, serve } = createPhotonGateway(deps);
 
   const port = Number(process.env.GATEWAY_PORT ?? 8787);
   const server = gateway.startServer(port);
   const h = gateway.health();
   console.log(
     `gateway photon on :${port}, brain at ${gateway.brainUrl}, fanout ${gateway.forceFanout ? "on" : "off"}, ` +
-      `dms registered: ${h.dms_registered.join(", ") || "none"}`,
+      `dms registered: ${h.dms_registered.join(", ") || "none"}, providers: ${providers.join(", ")}, ` +
+      `house group: ${gateway.spaces.group?.startsWith(TG) ? "telegram" : h.group_registered ? "imessage" : "none"}`,
   );
 
   process.once("SIGINT", () => {
     server.close();
-    void app.stop().finally(() => process.exit(0));
+    void stop().finally(() => process.exit(0));
   });
   await serve();
   server.close();
+}
+
+type Connection = { deps: PhotonDeps<Space>; stop(): Promise<void>; providers: string[] };
+
+/** Start Spectrum with iMessage, plus Telegram when a bot token is set. Never logs secrets. */
+async function connect(projectId: string, projectSecret: string, botToken?: string): Promise<Connection> {
+  if (botToken) {
+    const app = await Spectrum({
+      projectId,
+      projectSecret,
+      providers: [imessage.config(), telegram.config({ botToken })],
+    });
+    const im = imessage(app);
+    const tg = telegram(app);
+    return {
+      deps: {
+        messages: app.messages,
+        spaceType: (space) => imessage(space).type,
+        getSpace: (id) => (id.startsWith(TG) ? tg.space.get(id.slice(TG.length)) : im.space.get(id)),
+        openDm: (handle) => im.space.create(handle),
+      },
+      stop: () => app.stop(),
+      providers: ["imessage", "telegram"],
+    };
+  }
+  const app = await Spectrum({ projectId, projectSecret, providers: [imessage.config()] });
+  const im = imessage(app);
+  return {
+    deps: {
+      messages: app.messages,
+      spaceType: (space) => imessage(space).type,
+      getSpace: (id) => im.space.get(id),
+      openDm: (handle) => im.space.create(handle),
+    },
+    stop: () => app.stop(),
+    providers: ["imessage"],
+  };
 }
