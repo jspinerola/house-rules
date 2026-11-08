@@ -62,7 +62,7 @@ def test_unknown_roommate_raises(indicators):
 def test_isolation_other_roommate_txns_do_not_change_result(indicators):
     before = indicators.compute("jordan")
     store = registry.get("store")
-    # Poison Alex's history with a huge spend; Jordan must be unchanged.
+    # Poison Xander's history with a huge spend; Kevin must be unchanged.
     store.add_transaction(Transaction(
         id="alex-poison", roommate_id="alex", date="2026-11-27",
         description="poison", category="other", amount=-50_000,

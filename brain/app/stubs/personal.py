@@ -20,7 +20,7 @@ class StubPersonal:
         if proposal.flow == "rent" and rid == "jordan":
             return [Reply(target=DMTarget(roommate_id=rid), text=scripts.rent_dm_jordan)]
         if proposal.flow == "rent" and rid == "alex":
-            text = ("Rent is due. Jordan's payday is 2026-12-15, so the plan proposes you front "
-                    "Jordan's $800 share now. Jordan auto-repays you on 2026-12-16. Reply yes to agree.")
+            text = ("Rent is due. Kevin's payday is 2026-12-15, so the plan proposes you front "
+                    "Kevin's $800 share now. Kevin auto-repays you on 2026-12-16. Reply yes to agree.")
             return [Reply(target=DMTarget(roommate_id=rid), text=text)]
         return []

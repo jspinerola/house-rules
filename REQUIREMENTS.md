@@ -28,7 +28,7 @@ The foundation commit and P0 skeleton are merged to `main` (PR #2, CI green).
 | M7 Personal agent, M8 House agent | P0 skeleton done (code + stub wording); house agent routes group messages via Grok tool calls (keyword fallback); Grok personal-agent routing open |
 | M10 Treasurer | P0 done |
 | M11 Brain API | Done: route shape tests, JSON errors, env CORS, `/health` modes (`m11-api`) |
-| M12 Gateway | Sim and Photon done (`GATEWAY_MODE=photon`): shared-pool DMs, `GATEWAY_FANOUT=1` house relay (one failing phone does not block the rest), `#house` DMs to the house agent, dedupe, brain retry, best-effort typing, `npm test`. Inbound verified on 3 phones; full rent-day run pending Sam being added to the Photon project |
+| M12 Gateway | Sim and Photon done (`GATEWAY_MODE=photon`): shared-pool DMs, `GATEWAY_FANOUT=1` house relay (one failing phone does not block the rest), `#house` DMs to the house agent, dedupe, brain retry, best-effort typing, `npm test`. Inbound verified on 3 phones; full rent-day run pending Julian being added to the Photon project |
 | M14 Dashboard | Unstyled version done |
 | M13 Bank app | Done: styled account screen, animated balance and rows, Metro `/brain` proxy over the Expo tunnel (PR #6) |
 | M16 Outbox http | Done in brain (gateway down -> JSON 502); REPL check with the sim gateway open |
@@ -47,7 +47,7 @@ The foundation commit and P0 skeleton are merged to `main` (PR #2, CI green).
 1. **Contract first.** Every module boundary is a typed interface (Python `Protocol` or TypeScript `type`) plus Pydantic or JSON shapes that live in `contracts/`. Changing one needs a PR touching only `contracts/` and a heads-up to the team.
 2. **Every interface ships with a working stub.** The stub returns realistic data from fixtures, so every caller works on day one. Real implementations replace stubs one at a time.
 3. **Flags pick real or stub, per module.** Each module has an env flag (`<MODULE>_MODE=stub|real`). `main` must run end to end with every flag on `stub`.
-4. **Shared fixtures, not shared state.** The seed scenario (Alex, Sam, Jordan, rent, couch) lives in `fixtures/scenario.json`. Stubs and tests read it; nobody waits for the real database to have data.
+4. **Shared fixtures, not shared state.** The seed scenario (Xander, Julian, Kevin, rent, couch) lives in `fixtures/scenario.json`. Stubs and tests read it; nobody waits for the real database to have data.
 5. **Each module is testable alone.** Every requirement below has a standalone done-when that runs with its neighbors stubbed.
 6. **Integration is a flag flip, not a merge dependency.** When two real modules are both merged, flip both flags to `real` and run the contract test. No branch ever depends on another branch.
 
@@ -60,7 +60,7 @@ One person, or the Cursor one-shot, builds this in about 90 minutes and merges i
 | F1 | `contracts/models.py`: Pydantic models `ChatIn`, `Reply`, `ChatOut`, `Leg`, `Proposal`, `TraceEvent`, `HouseState`, `BankView`, `Indicator`, `CoverAnswer`, matching the build plan's JSON shapes | `python -c "import contracts.models"` passes |
 | F2 | `contracts/interfaces.py`: one `Protocol` per module (signatures in the module requirements below) | Every module in section 4 has a Protocol |
 | F3 | `contracts/types.ts`: TypeScript mirror of F1 for the gateway, dashboard and bank app | `tsc --noEmit` passes in all three apps |
-| F4 | `fixtures/scenario.json` (roommates, balances, history, bills, house rules, demo date 2026-11-28) and `fixtures/expected.json` (the expected results: $800 rent shares, Jordan `no` until 2026-12-15, electric 60/45/45, couch 3-month plan) | Both load and validate against F1 |
+| F4 | `fixtures/scenario.json` (roommates, balances, history, bills, house rules, demo date 2026-11-28) and `fixtures/expected.json` (the expected results: $800 rent shares, Kevin `no` until 2026-12-15, electric 60/45/45, couch 3-month plan) | Both load and validate against F1 |
 | F5 | `brain/app/stubs/`: a stub class for every Protocol, returning fixture data or `expected.json` answers | Each stub passes its own contract test |
 | F6 | `brain/app/registry.py`: `get("nessie")` and so on, choosing stub or real from `<MODULE>_MODE` | All flags default to `stub` |
 | F7 | FastAPI app with every route from the build plan (`/chat`, `/state`, `/bank/{id}`, `/demo/*`, `/health`), wired only through the registry | `GET /state` and `GET /bank/jordan` return fixture data |
@@ -97,7 +97,7 @@ Each module lists its interface (in `contracts/interfaces.py`), what its stub do
 ### M2. Indicators
 
 - **Interface:** `Indicators.compute(rid) -> dict[str, Indicator]`, where `Indicator = {value, status: good|watch|risk, inputs}`.
-- **Stub:** fixed values from `expected.json` (Jordan's runway under 14 days).
+- **Stub:** fixed values from `expected.json` (Kevin's runway under 14 days).
 - **Flag:** `INDICATORS_MODE`.
 - **P0:** adapter to the workshop `compute_metrics` (8 indicators) plus `runway_days`, `rent_to_income`, `days_to_payday`, `buffer_after(amount)`, all computed from Store data.
 - **Done when:** with the Store stubbed, `compute("jordan")` returns all 12 keys and matches `expected.json`.
@@ -123,7 +123,7 @@ Each module lists its interface (in `contracts/interfaces.py`), what its stub do
 - **Done when:** a test with Treasurer stubbed walks rent from pending to approved to executed.
 
 * **Also on the interface:** `parse(text) -> "yes" | "no" | None`, used by `/chat` routing.
-* **Rent with fronting is ONE proposal** (flow `rent`, all 3 approve) with three legs: Sam to Alex $800 now, Alex to Maple Court $2,400 now, Jordan to Alex $800 scheduled 2026-12-16.
+* **Rent with fronting is ONE proposal** (flow `rent`, all 3 approve) with three legs: Julian to Xander $800 now, Xander to Maple Court $2,400 now, Kevin to Xander $800 scheduled 2026-12-16.
 
 ### M5. Auditor
 
@@ -131,7 +131,7 @@ Each module lists its interface (in `contracts/interfaces.py`), what its stub do
 - **Stub:** always ok.
 - **Flag:** `AUDITOR_MODE`.
 - **P0:** blocks any number in a message that isn't in `allowed_numbers`. A message to the group may not contain any roommate's balance or income. Blocked drafts are retried once by the caller, then replaced with a template.
-- **Done when:** a draft to the group containing Jordan's $310 is blocked, and a correct rent message passes.
+- **Done when:** a draft to the group containing Kevin's $310 is blocked, and a correct rent message passes.
 
 ### M6. LLM adapter
 
@@ -147,9 +147,9 @@ Each module lists its interface (in `contracts/interfaces.py`), what its stub do
 - **Stub:** returns `expected.json` answers and a canned DM.
 - **Flag:** `PERSONAL_MODE`.
 - **P0:** code decides the answer (Tools `can_cover`); the LLM only words the DM. In a DM, it answers the roommate's own questions with their own numbers.
-- **Done when:** with Tools and LLM stubbed, Jordan's `ask` returns only `{level: no, earliest_date: 2026-12-15}`, and his DM explains the fronting plan.
+- **Done when:** with Tools and LLM stubbed, Kevin's `ask` returns only `{level: no, earliest_date: 2026-12-15}`, and his DM explains the fronting plan.
 
-* **Also on the interface:** `explain(rid, proposal) -> list[Reply]`, the private DM about a proposal (e.g. Jordan's fronting DM).
+* **Also on the interface:** `explain(rid, proposal) -> list[Reply]`, the private DM about a proposal (e.g. Kevin's fronting DM).
 
 ### M8. House agent
 
@@ -159,13 +159,13 @@ Each module lists its interface (in `contracts/interfaces.py`), what its stub do
 - **P0:** tools `split_bill`, `group_affordability`, `payday_plan`, `ask_personal`, `create_proposal`. It handles the `rent_due` event and questions like "can we afford a $1,200 couch?" Every outgoing message goes through the Auditor.
 - **Done when:** with all its dependencies stubbed, the couch question produces 3 `ask_personal` trace events and a 3-month proposal.
 
-* **P1: house rules set by chat (build plan A7).** A roommate texts a rule ("Alex has the master, rent should be 40/30/30"); the house agent's tool loop calls `propose_rule`; code validates it, previews the dollar split with `split_bill(..., rule=candidate)` and opens a `rule` proposal everyone must approve. On all yeses, `proposals` saves it with `store.save_house_rule` (no treasurer call). `remove_rule` goes through the same consent. Design: `docs/RULES_AND_PROFILES.md`.
+* **P1: house rules set by chat (build plan A7).** A roommate texts a rule ("Xander has the master, rent should be 40/30/30"); the house agent's tool loop calls `propose_rule`; code validates it, previews the dollar split with `split_bill(..., rule=candidate)` and opens a `rule` proposal everyone must approve. On all yeses, `proposals` saves it with `store.save_house_rule` (no treasurer call). `remove_rule` goes through the same consent. Design: `docs/RULES_AND_PROFILES.md`.
   - Done when: with a scripted LLM, "40/30/30" previews $960 / $720 / $720, three yeses save it, the next rent proposal uses it, a pending rent proposal keeps $800 each, and invalid percents are rejected with a reason.
 * **P1: personal profile (build plan A9).** `Indicators.profile(rid)` derives income pattern, side income, recurring charges and spend trend from store history plus executed legs (real Nessie ids), and the roommate sets a cushion, savings goal, front cap or notes in their DM (`set_preference`). `can_cover` and `payday_plan` use them; `Release` is unchanged, so the house still sees only ok / tight / no or a date.
-  - Done when: Jordan is `steady_plus_side` with $374.89/mo side income; StreamFlix and Phone Plan are detected as recurring; executed rent changes Jordan's runway; Sam's $2,500 cushion turns the couch answer from ok to tight; Alex's $500 front cap makes Sam the fronter; every locked result in `test_expected.py` is unchanged with no preferences set.
+  - Done when: Kevin is `steady_plus_side` with $374.89/mo side income; StreamFlix and Phone Plan are detected as recurring; executed rent changes Kevin's runway; Julian's $2,500 cushion turns the couch answer from ok to tight; Xander's $500 front cap makes Julian the fronter; every locked result in `test_expected.py` is unchanged with no preferences set.
 * **P1: receipt split (build plan A8).** Photo to line items via Grok vision (M6), then the house agent asks who shared which items and proposes the paybacks.
 
-- **Couch plan exactly:** Alex buys the $1,200 couch at Couch Co. now; Sam and Jordan each pay Alex $133.33, $133.33 and $133.34 on 2026-11-28, 2026-12-28 and 2027-01-28.
+- **Couch plan exactly:** Xander buys the $1,200 couch at Couch Co. now; Julian and Kevin each pay Xander $133.33, $133.33 and $133.34 on 2026-11-28, 2026-12-28 and 2027-01-28.
 
 ### M9. Nessie client
 
@@ -175,7 +175,7 @@ Each module lists its interface (in `contracts/interfaces.py`), what its stub do
 - **P0:** live client against the Nessie API (confirm endpoint names in their docs first). `seed` creates 3 customers and checking accounts, deposits the starting balances, and stores the Nessie ids. Retries once on 5xx; on failure, returns an error the Treasurer reports.
 - **Done when:** the Nessie contract test passes in `live` mode, and a transfer changes both balances in the Nessie API.
 
-* **Also on the interface:** `deposit(rid, amount, description) -> id`. `/demo/advance` credits every payday it crosses (Alex 12-01, Sam 12-05, Jordan 12-15), so Jordan has $860 after repaying on 12-16.
+* **Also on the interface:** `deposit(rid, amount, description) -> id`. `/demo/advance` credits every payday it crosses (Xander 12-01, Julian 12-05, Kevin 12-15), so Kevin has $860 after repaying on 12-16.
 
 ### M10. Treasurer
 
@@ -183,7 +183,7 @@ Each module lists its interface (in `contracts/interfaces.py`), what its stub do
 - **Stub:** runs due legs through the stub Nessie and leaves future legs pending (it no longer marks every leg done).
 - **Flag:** `TREASURER_MODE`.
 - **P0:** refuses unless the proposal is `approved`. Runs legs dated today or earlier through the Nessie client; future legs stay `pending` until `run_due`. Records Nessie ids, sets `executed` or `failed`, writes trace, and returns a confirmation `Reply` for the group.
-- **Done when:** with Nessie stubbed, rent with fronting produces Sam to Alex $800 now, the $2,400 landlord payment now, and Jordan to Alex $800 only after `run_due(2026-12-16)`.
+- **Done when:** with Nessie stubbed, rent with fronting produces Julian to Xander $800 now, the $2,400 landlord payment now, and Kevin to Xander $800 only after `run_due(2026-12-16)`.
 
 ### M11. Brain API and demo control
 
@@ -202,13 +202,13 @@ Each module lists its interface (in `contracts/interfaces.py`), what its stub do
 - **P1:** tapback 👍 counts as yes. **P2:** voice call on a Photon SMS number for a missing rent approval.
 - **Done when:** a fake brain (a 20-line Express server returning canned `ChatOut`) gets real iMessages and its replies arrive on the phones.
 
-* **Sim REPL:** start the brain with `OUTBOX_MODE=http` so pushed messages reach it. Commands: `@alex <dm>`, `#group <text>`, `@sam #group <text>` (group message sent as Sam), `/reset`, `/trigger rent_due`, `/advance YYYY-MM-DD`, `/state`.
+* **Sim REPL:** start the brain with `OUTBOX_MODE=http` so pushed messages reach it. Commands: `@alex <dm>`, `#group <text>`, `@sam #group <text>` (group message sent as Julian), `/reset`, `/trigger rent_due`, `/advance YYYY-MM-DD`, `/state`.
 
 ### M13. Bank app (Expo)
 
 - **Reads:** `GET /bank/{rid}` every 2 s.
 - **P0:** roommate picker, then an account screen with balance, scheduled payments and transactions (newest first). Styled after the Capital One mobile app for the Capital One demo, with no login fields, and Expo Go only. A new transaction slides in and the balance animates.
-- **Done when:** against the stub brain, `POST /demo/trigger` plus 3 stub yeses visibly change Alex's screen within 3 s.
+- **Done when:** against the stub brain, `POST /demo/trigger` plus 3 stub yeses visibly change Xander's screen within 3 s.
 
 ### M14. House view dashboard (Next.js)
 

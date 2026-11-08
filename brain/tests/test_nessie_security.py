@@ -386,7 +386,7 @@ def test_live_reseed_reuses_customers_one_account_each():
 
 def test_live_reseed_leaves_other_customers_alone():
     n, fake = _live()
-    fake.customers["other"] = {"_id": "other", "first_name": "Alex", "last_name": "Roommate",
+    fake.customers["other"] = {"_id": "other", "first_name": "Xander", "last_name": "Roommate",
                                "address": {"street_name": "Elm Street"}}
     fake.accounts["other-acct"] = {"_id": "other-acct", "customer_id": "other", "balance": 99}
     n.seed(_scenario())

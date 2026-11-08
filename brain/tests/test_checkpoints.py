@@ -106,7 +106,7 @@ def test_I4_live_nessie_rent_fronting(use):
     assert n.balance("sam") == 1800 and n.balance("alex") == 2600 and n.balance("jordan") == 310
     saved = store.get_proposal(p.id)
     assert saved.status == "executed" and saved.legs[2].status == "pending"
-    # Live GET confirms sandbox balances moved (I4 done-when). Jordan's scheduled
+    # Live GET confirms sandbox balances moved (I4 done-when). Kevin's scheduled
     # repay stays pending until payday; stub-Nessie contract tests cover run_due.
     assert float(n._request("GET", f"/accounts/{n._accounts['sam']}")["balance"]) == 1800
     assert float(n._request("GET", f"/accounts/{n._accounts['alex']}")["balance"]) == 2600

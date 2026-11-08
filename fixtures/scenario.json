@@ -10,7 +10,7 @@
  "roommates": [
   {
    "id": "alex",
-   "name": "Alex",
+   "name": "Xander",
    "handle": "sim:alex",
    "monthly_income": 5800,
    "pay": {
@@ -37,7 +37,7 @@
   },
   {
    "id": "sam",
-   "name": "Sam",
+   "name": "Julian",
    "handle": "sim:sam",
    "monthly_income": 4116.67,
    "pay": {
@@ -64,7 +64,7 @@
   },
   {
    "id": "jordan",
-   "name": "Jordan",
+   "name": "Kevin",
    "handle": "sim:jordan",
    "monthly_income": 1750,
    "pay": {
@@ -1221,7 +1221,7 @@
    "split": {
     "sam": 0.4
    },
-   "source_text": "Sam pays 40% of electric",
+   "source_text": "Julian pays 40% of electric",
    "confirmed_by": [
     "alex",
     "sam",

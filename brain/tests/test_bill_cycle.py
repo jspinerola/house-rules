@@ -28,7 +28,7 @@ def test_paid_rent_rolls_to_next_month(real_agents):
 def test_jordan_is_told_why_and_sam_is_not(real_agents):
     from app import demo
     _pay_rent()
-    demo.advance("2026-12-16")  # Jordan's payday + repayment: $860 in checking
+    demo.advance("2026-12-16")  # Kevin's payday + repayment: $860 in checking
     assert registry.get("nessie").balance("jordan") == 860
     replies = registry.get("house").on_event("rent_due")
     jordan = next(r.text for r in replies if r.target.type == "dm" and r.target.roommate_id == "jordan")
@@ -57,6 +57,6 @@ def test_personal_agent_refuses_to_note_a_house_rule(real_agents, monkeypatch):
 
 def test_ordinary_notes_with_dates_still_save(real_agents, monkeypatch):
     call = ToolCall(name="set_preference", args={"kind": "add_note", "value": "I get tips on 12/15 weekends"})
-    _script(monkeypatch, [LLMResult(text="", tool_calls=[call]), LLMResult(text="Noted, Jordan.")])
+    _script(monkeypatch, [LLMResult(text="", tool_calls=[call]), LLMResult(text="Noted, Kevin.")])
     registry.get("personal").dm("jordan", "fyi I get tips on 12/15 weekends")
     assert registry.get("store").get_preferences("jordan").notes == ["I get tips on 12/15 weekends"]

@@ -14,14 +14,14 @@ Synthetic data only — a 3-bedroom apartment, **$2,400/mo** rent. Demo clock st
 
 | Roommate | Situation |
 | --- | --- |
-| **Alex** | Lease holder; landlord bill comes from Alex's account. Steady salary, paid on the 1st. |
-| **Sam** | Works from home — house rule: Sam pays 40% of electric. Paid biweekly. |
-| **Jordan** | Part-time plus gig income, paid on the 15th. Runway is tight at month start. |
+| **Xander** | Lease holder; landlord bill comes from Xander's account. Steady salary, paid on the 1st. |
+| **Julian** | Works from home — house rule: Julian pays 40% of electric. Paid biweekly. |
+| **Kevin** | Part-time plus gig income, paid on the 15th. Runway is tight at month start. |
 
 ### Core demo flows (P0)
 
-1. **Rent day** — $800 each to Alex, then Alex pays the landlord. Everyone must approve.
-2. **Payday fronting** — Jordan can't cover until the 15th; Alex fronts now, Jordan auto-repays after payday. Group never sees Jordan's balance.
+1. **Rent day** — $800 each to Xander, then Xander pays the landlord. Everyone must approve.
+2. **Payday fronting** — Kevin can't cover until the 15th; Xander fronts now, Kevin auto-repays after payday. Group never sees Kevin's balance.
 3. **Group affordability** — "Can we afford a $1,200 couch?" Personal agents answer ok / tight / no; house agent proposes a plan (e.g. $400 each over 3 months).
 
 P1/P2 (utilities, receipts, watcher nudges, subscriptions, lease renewal) are documented in the build plan; they are not required for the first end-to-end demo.
@@ -111,7 +111,7 @@ Rent day in the sim REPL:
 #group can we afford a $1,200 couch?
 ```
 
-`@alex <text>` is a DM from Alex; `#group <text>` posts to the group as the last `@` sender (`@sam #group hi` to pick one).
+`@alex <text>` is a DM from Xander; `#group <text>` posts to the group as the last `@` sender (`@sam #group hi` to pick one).
 
 ### Photon mode (real phones)
 

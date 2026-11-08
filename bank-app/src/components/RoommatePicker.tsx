@@ -3,9 +3,9 @@ import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, fonts } from '../theme';
 
 export const ROOMMATES = [
-  { id: 'alex', name: 'Alex' },
-  { id: 'sam', name: 'Sam' },
-  { id: 'jordan', name: 'Jordan' },
+  { id: 'alex', name: 'Xander' },
+  { id: 'sam', name: 'Julian' },
+  { id: 'jordan', name: 'Kevin' },
 ];
 
 export function RoommatePicker({ onPick }: { onPick: (rid: string) => void }) {

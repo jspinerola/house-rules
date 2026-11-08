@@ -33,10 +33,10 @@ AGENT = """You run the house's money in this group chat. Use tools for every fac
 do arithmetic yourself (no rounding, no totals), quote tool numbers exactly:
 - house_status for bills, due dates, house rules, pending proposals, who owes whom.
 - split_bill / what_if_purchase / can_cover to look things up without committing to anything.
-- propose_rule when roommates agree on how a bill should be split and why ("Alex has the master,
+- propose_rule when roommates agree on how a bill should be split and why ("Xander has the master,
   rent 40/30/30"; bill "purchase" = the default split for shared buys); remove_rule to go back to
   an even split. Both post a vote, so call and stop.
-- For one purchase split unevenly ("Alex pays half since it's in Alex's room"), pass shares and
+- For one purchase split unevenly ("Xander pays half since it's in Xander's room"), pass shares and
   reason to group_affordability / what_if_purchase instead of making a house rule.
 - start_bill or group_affordability ONLY when the roommates want to actually set up a bill payment
   or purchase; those post the proposal themselves, so call them and stop.
@@ -45,7 +45,7 @@ Never say you'll check or set something up: call the tool in this same turn.
 "let's do rent" / "rent is due" -> start_bill. Only say "reply yes" right after an ACTION posted it.
 Pass a price only if a roommate stated it. If nothing needs a tool (greetings, jokes, thanks), just reply.
 Never end with a yes/no question: "yes" approves whatever proposal is open. Proposing only opens a
-vote, so when someone states a lasting split ("Alex should pay 50% of all shared furniture") call
+vote, so when someone states a lasting split ("Xander should pay 50% of all shared furniture") call
 propose_rule right away; for anything else say "say the word and I'll put it to a vote".
 You cannot record approvals. Only a reply of yes / y / yep / ok / approve counts; if someone agrees in
 other words ("lets do that"), tell them to reply yes. Never say someone approved unless a tool says so. Never mention balances or incomes; personal agents only tell you ok, tight, no or a date."""
@@ -442,7 +442,7 @@ class HouseAgent:
         def shares_of(args: dict) -> dict[str, float]:
             raw = args.get("shares")
             if not isinstance(raw, dict) or not raw:
-                raise ValueError("shares must map roommate names to percents, e.g. {\"Alex\": 40}")
+                raise ValueError("shares must map roommate names to percents, e.g. {\"Xander\": 40}")
             split: dict[str, float] = {}
             for who, pct in raw.items():
                 if not isinstance(pct, (int, float)) or isinstance(pct, bool) or not 0 <= pct <= 100:
@@ -519,12 +519,12 @@ class HouseAgent:
         rule_param = {"bill": {"type": "string", "enum": RULE_BILLS,
                                "description": "purchase = the default split for shared buys"}}
         shares_param = {"type": "object", "additionalProperties": {"type": "number"},
-                        "description": "Roommate name -> percent, e.g. {\"Alex\": 40, \"Sam\": 30, \"Jordan\": 30}."}
+                        "description": "Roommate name -> percent, e.g. {\"Xander\": 40, \"Julian\": 30, \"Kevin\": 30}."}
         price_params = {"item": {"type": "string", "description": "What they want, singular, e.g. couch."},
                         "price": {"type": "number", "description": "Total USD, as a roommate stated it."},
                         "months": {"type": "integer", "description": "Spread the cost over this many months."},
                         "shares": shares_param | {"description": "Only for an uneven split of THIS purchase "
-                                                  "(e.g. Alex pays 50% since it's in Alex's room). Omit to use "
+                                                  "(e.g. Xander pays 50% since it's in Xander's room). Omit to use "
                                                   "the house purchase rule or an even split."},
                         "reason": {"type": "string", "description": "Why the split is uneven, in their words."}}
         return [
@@ -545,7 +545,7 @@ class HouseAgent:
                       "Unlisted roommates split the rest evenly. Posts a preview of the dollar split.",
                       rule_param | {"shares": shares_param,
                                     "reason": {"type": "string", "description": "Why, in their words, e.g. "
-                                               "Alex has the master bedroom."}},
+                                               "Xander has the master bedroom."}},
                       propose_rule, ("bill", "shares")),
             AgentTool("remove_rule", "ACTION: put going back to an even split of a bill to a vote.",
                       rule_param, remove_rule, ("bill",)),

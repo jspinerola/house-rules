@@ -20,15 +20,15 @@ one Expo tunnel carries both the bundle and the API. LAN mode (`npx expo start`)
 
 ## Demo check (M13 done-when)
 
-Open Alex in the app, then run:
+Open Xander in the app, then run:
 
 ```bash
 bank-app/scripts/rent-demo.sh                 # reset, rent_due, yes x3
 ADVANCE=1 bank-app/scripts/rent-demo.sh       # also advance to 2026-12-16
 ```
 
-Within one poll (2 s) the balance tweens from $4,200 to $2,600, the Sam +$800 and Maple Court -$2,400 rows
-slide in, and "From Jordan" appears under Scheduled. When you advance, it fades out of Scheduled and slides
+Within one poll (2 s) the balance tweens from $4,200 to $2,600, the Julian +$800 and Maple Court -$2,400 rows
+slide in, and "From Kevin" appears under Scheduled. When you advance, it fades out of Scheduled and slides
 into Transactions.
 
 ## Checks

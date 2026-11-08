@@ -31,9 +31,9 @@ def _script(monkeypatch, steps: list[LLMResult]):
 
 def test_read_tool_result_feeds_the_answer(real_agents, monkeypatch):
     seen = _script(monkeypatch, [LLMResult(text="", tool_calls=[ToolCall(name="house_status")]),
-                                 LLMResult(text="Rent is due 2026-12-01 and Sam's share is $800.")])
+                                 LLMResult(text="Rent is due 2026-12-01 and Julian's share is $800.")])
     [reply] = registry.get("house").on_message("sam", "when is rent due and what's my share?")
-    assert reply.text == "Rent is due 2026-12-01 and Sam's share is $800."
+    assert reply.text == "Rent is due 2026-12-01 and Julian's share is $800."
     assert "TOOL RESULTS" in seen[1][-1]["content"] and "Maple Court" in seen[1][-1]["content"]
     assert not registry.get("store").proposals()  # read-only
 
@@ -45,7 +45,7 @@ def test_invented_number_is_blocked_then_falls_back(real_agents, monkeypatch):
 
 
 def test_private_balance_never_reaches_the_group(real_agents, monkeypatch):
-    _script(monkeypatch, [LLMResult(text="Alex has $4,200.")])
+    _script(monkeypatch, [LLMResult(text="Xander has $4,200.")])
     [reply] = registry.get("house").on_message("sam", "how much does alex have")
     assert "4,200" not in reply.text and "4200" not in reply.text
 
@@ -86,12 +86,12 @@ def test_announcing_instead_of_calling_gets_nudged(real_agents, monkeypatch):
 def test_personal_dm_uses_own_tools(real_agents, monkeypatch):
     call = ToolCall(name="can_i_cover", args={"amount": 300, "by_date": "2026-12-05"})
     _script(monkeypatch, [LLMResult(text="", tool_calls=[call]),
-                          LLMResult(text="Tight, Jordan, but you can cover $300 by 2026-12-05.")])
+                          LLMResult(text="Tight, Kevin, but you can cover $300 by 2026-12-05.")])
     [reply] = registry.get("personal").dm("jordan", "can i afford a 300 ticket next week?")
     assert reply.target.roommate_id == "jordan" and "$300" in reply.text
 
 
 def test_personal_dm_blocks_other_roommates_balance(real_agents, monkeypatch):
-    _script(monkeypatch, [LLMResult(text="Alex has $4,200, ask them.")])
+    _script(monkeypatch, [LLMResult(text="Xander has $4,200, ask them.")])
     [reply] = registry.get("personal").dm("jordan", "how much does alex have")
     assert "4,200" not in reply.text

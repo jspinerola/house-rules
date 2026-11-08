@@ -57,7 +57,7 @@ def test_rent_includes_jordan_fronting_dm(use, mode):
     use(house=mode)
     replies = registry.get("house").on_event("rent_due")
     jordan = [r for r in replies if r.target.type == "dm" and r.target.roommate_id == "jordan"]
-    assert jordan and "Alex" in jordan[0].text and "2026-12-16" in jordan[0].text
+    assert jordan and "Xander" in jordan[0].text and "2026-12-16" in jordan[0].text
 
 
 @impl_params("house")
@@ -65,7 +65,7 @@ def test_rent_includes_alex_fronting_dm(use, mode):
     use(house=mode)
     replies = registry.get("house").on_event("rent_due")
     alex = [r for r in replies if r.target.type == "dm" and r.target.roommate_id == "alex"]
-    assert alex and "Jordan" in alex[0].text and "2026-12-16" in alex[0].text
+    assert alex and "Kevin" in alex[0].text and "2026-12-16" in alex[0].text
 
 
 def test_couch_ask_personal_trace_detail(use):
@@ -112,7 +112,7 @@ def test_electric_bill_splits_by_rule(use):
     [p] = registry.get("store").proposals()
     assert p.flow == "utility"
     transfers = {(l.from_, l.amount) for l in p.legs if l.type == "transfer"}
-    # Sam 40% = $60; Alex is payer so only Sam/Jordan transfer in (or fronting)
+    # Julian 40% = $60; Xander is payer so only Julian/Kevin transfer in (or fronting)
     shares = fixtures.expected().split_bill[1].expect.shares
     assert shares["sam"] == 60 and shares["alex"] == 45 and shares["jordan"] == 45
     pay = next(l for l in p.legs if l.type == "bill_payment")
