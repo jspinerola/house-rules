@@ -30,6 +30,9 @@ export type PhotonDeps<S extends SpaceLike> = {
   openDm(handle: string): Promise<S>;
 };
 
+// Shared pool has no group chat: a DM starting with #house / #group / @house speaks to the house.
+const HOUSE_TAG = /^\s*(?:#house|#group|@house)\b[\s:,]*/i;
+
 const textOf = (m: MessageLike): string | null =>
   m.content.type === "text" && "text" in m.content && typeof m.content.text === "string"
     ? m.content.text
@@ -103,10 +106,11 @@ export function createPhotonGateway<S extends SpaceLike>(deps: PhotonDeps<S>, op
       console.log(`registered dm: ${rid} (${maskHandle(handle)})`);
     }
 
+    const toHouse = chatType === "dm" && HOUSE_TAG.test(text);
     const chatIn: ChatIn = {
-      chat_type: chatType,
+      chat_type: toHouse ? "group" : chatType,
       sender_handle: handle,
-      text,
+      text: toHouse ? text.replace(HOUSE_TAG, "") : text,
       message_id: message.id,
       ts: message.timestamp.toISOString(),
     };
