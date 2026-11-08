@@ -26,3 +26,6 @@ dist/
 Thumbs.db
 .idea/
 .vscode/
+
+# Local SQLite
+brain/*.db

@@ -1,0 +1,2 @@
+Before writing finance logic, search reference/pnc-workshop and reuse it. Never edit reference/.
+Modules talk only through contracts/interfaces.py and brain/app/registry.py.
