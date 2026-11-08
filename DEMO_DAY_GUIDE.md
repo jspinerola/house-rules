@@ -122,8 +122,7 @@ The treasurer moves the money through Nessie and confirms in the group. Balances
 
 | Who | Where | Message |
 | --- | --- | --- |
-| Julian | Group | `what if xander paid half of a 1200 couch since it's going in his room?` |
-| Xander | Group | `lets do that` |
+| Julian | Group | `can we get a 1200 couch? xander pays half since it's going in his room` |
 | Everyone | Group | `yes` |
 
 The plan comes out to Xander $200/mo, Julian $100/mo and Kevin $100/mo over 3 months. Kevin is tight, so the house spreads it out rather than asking for cash up front.
@@ -164,6 +163,40 @@ Paydays land, Kevin's scheduled $720 goes back to Julian, and the thread disappe
 | Activity says the auditor held back a reply | A draft had a number no tool produced, or a private figure | Expected; the safe version was sent instead |
 | "Nobody could front a share" | Everyone's front cap is below the share | DM a higher cap ("I can front up to $1,000"), then `lets do rent` again |
 | A roommate isn't recognized in Telegram | Their id isn't in `*_TELEGRAM` | Add it to `.env` and restart the gateway |
+
+## Recording the demo video
+
+`scripts/record_demo.py` is a demo director. It plays the script above against the running brain and records the screens for you, using the same timing on every take.
+
+```bash
+uv run --no-project --with playwright playwright install ffmpeg      # once: the video encoder
+uv run scripts/record_demo.py                           # reset, play every beat, record
+uv run scripts/record_demo.py --pace 1.5                # slower, for narration
+uv run scripts/record_demo.py --watch 300               # record only; people type the script for real
+```
+
+It saves everything to `recordings/<time>/`:
+
+| File | What it is |
+| --- | --- |
+| `dashboard.webm` | The house view at 1920×1080 |
+| `bank-kevin.webm`, `bank-julian.webm` | The bank app at phone size (served by the Expo dev server at `localhost:8081`; press `w` in the Expo terminal if the web build isn't up) |
+| `timeline.txt` | Every beat and agent reply, with timestamps |
+| `captions.srt` | Each roommate's message as a caption, ready for the editor |
+
+When the take has a problem (for example, the rule didn't save or rent didn't execute), the director says so at the end and exits with a nonzero code. Run it again for a clean take.
+
+**Roommates' own messages:** bots can't post as a person, so in drive mode a roommate's message reaches the brain directly. The agents' replies are relayed to the real chats: the house's replies land in the Telegram group, and each personal agent's DM lands on that person's phone. The roommates' lines appear in the dashboard's activity feed and in `captions.srt`.
+
+### What to record yourselves
+
+The director covers the dashboard and the bank app. For the phone views, record these:
+
+1. **Kevin's, Julian's and Xander's DMs:** each person screen-records their iMessage chat with the agent (Control Center, Screen Recording) during a drive-mode run. The rent beat is the one that matters: Kevin's "why", Julian's request to front, and Xander's cap confirmation.
+2. **The group chat, typed for real:** one run in `--watch` mode where the three of you type the script in Telegram, recorded on a laptop (Telegram Desktop) or a phone. This is the only way the group shows real people talking.
+3. **Voiceover:** read the narration in `docs/SLIDES.md` (2-minute script), or generate it.
+
+Before recording, turn on Do Not Disturb (allow Telegram and iMessage), save the agent's number as a contact named "House Rules", and send 🎬 in the group as a sync cue.
 
 ## Afterwards
 

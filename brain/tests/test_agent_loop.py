@@ -95,3 +95,12 @@ def test_personal_dm_blocks_other_roommates_balance(real_agents, monkeypatch):
     _script(monkeypatch, [LLMResult(text="Xander has $4,200, ask them.")])
     [reply] = registry.get("personal").dm("jordan", "how much does alex have")
     assert "4,200" not in reply.text
+
+
+def test_asking_permission_instead_of_acting_gets_nudged(real_agents, monkeypatch):
+    seen = _script(monkeypatch, [LLMResult(text="Rule's set. Reply yes if you want me to start December rent."),
+                                 LLMResult(text="", tool_calls=[ToolCall(name="start_bill", args={"bill": "rent"})])])
+    registry.get("house").on_message("alex", "ok lets do rent")
+    assert any("ask permission" in m["content"] for m in seen[-1])
+    [p] = registry.get("store").proposals()
+    assert p.flow == "rent"
