@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import type { BankView } from '../../../contracts/types';
 import { AccountCard } from '../components/AccountCard';
+import { AgentKnows } from '../components/AgentKnows';
 import { TxnRow } from '../components/TxnRow';
 import { useBankPoll } from '../brain';
 import { colors, fonts } from '../theme';
@@ -95,6 +96,13 @@ export function AccountScreen({ rid, onBack }: { rid: string; onBack: () => void
 
         {view && (
           <>
+            {view.profile && (
+              <>
+                <Text style={styles.section}>What your agent knows</Text>
+                <AgentKnows profile={view.profile} />
+              </>
+            )}
+
             <Text style={styles.section}>Scheduled</Text>
             <View style={styles.card}>
               {scheduled.length === 0 ? (

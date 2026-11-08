@@ -1,7 +1,7 @@
 """In-memory Store loaded from fixtures/scenario.json."""
 from __future__ import annotations
 
-from contracts.models import Bill, HouseRule, Proposal, Roommate, TraceEvent, Transaction
+from contracts.models import Bill, HouseRule, Preferences, Proposal, Roommate, TraceEvent, Transaction
 
 from .. import fixtures
 
@@ -19,6 +19,7 @@ class StubStore:
         self._rules = {r.bill_type: r for r in s.house_rules}
         self._proposals: dict[str, Proposal] = {}
         self._trace: list[TraceEvent] = []
+        self._prefs: dict[str, Preferences] = {}
 
     def get_roommate(self, rid: str) -> Roommate:
         if rid not in self._roommates:
@@ -42,6 +43,23 @@ class StubStore:
 
     def house_rule(self, bill_type: str) -> HouseRule | None:
         return self._rules.get(bill_type)
+
+    def house_rules(self) -> list[HouseRule]:
+        return [r.model_copy(deep=True) for r in self._rules.values()]
+
+    def save_house_rule(self, rule: HouseRule) -> None:
+        self._rules[rule.bill_type] = rule.model_copy(deep=True)
+
+    def delete_house_rule(self, bill_type: str) -> None:
+        self._rules.pop(bill_type, None)
+
+    def get_preferences(self, rid: str) -> Preferences:
+        self.get_roommate(rid)
+        return self._prefs.get(rid, Preferences()).model_copy(deep=True)
+
+    def save_preferences(self, rid: str, prefs: Preferences) -> None:
+        self.get_roommate(rid)
+        self._prefs[rid] = prefs.model_copy(deep=True)
 
     def save_proposal(self, p: Proposal) -> None:
         self._proposals[p.id] = p.model_copy(deep=True)

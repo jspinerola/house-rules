@@ -80,6 +80,17 @@
 
 ---
 
+### Slide 5b: Demo Scene 3: The House Learns Its People (A7 + A9; see `docs/RULES_AND_PROFILES.md`)
+* **Header:** Rules you set, a profile it learns
+* **Visual:**
+  1. Alex in the group: *"alex has the master, rent should be 40/30/30"*. House: *"Rent would be Alex \$960, Sam \$720, Jordan \$720. Everyone reply yes to make it a house rule."* Three yeses later, the House rules card on the dashboard updates.
+  2. Alex in a DM: *"don't make me front more than \$500"*. Next rent: **Sam** fronts Jordan's \$720, and the group never learns why.
+  3. Jordan in a DM: *"why am I tight?"*. Agent: *"StreamFlix and your phone plan (\$60.49) renew before the 15th, and I'm not counting your gig income."* All of it comes from Jordan's bank history.
+* **Speaker Script:**
+  > *"Nothing here is a scripted scenario. The house sets its own rules in chat, and nothing changes until everyone says yes. Each personal agent builds a private profile from that roommate's real bank activity using PNC's wellness toolkit, plus anything they tell it, and that changes the math. The group still only ever hears ok, tight or no."*
+
+---
+
 ### Slide 6: Architecture, Security & Sponsor Tech (1:45 – 2:00)
 * **Header:** Least-Privilege Architecture & 231 Green Tests
 * **Visual:** Architecture diagram with sponsor logos:

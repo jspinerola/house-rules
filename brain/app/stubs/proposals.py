@@ -1,19 +1,20 @@
 """Approves on the first yes from any required approver; any no rejects."""
 from __future__ import annotations
 
-from contracts.models import Leg, Proposal, Verdict
+from contracts.models import HouseRule, Leg, Proposal, Verdict
 
-from .. import registry, trace, yesno
+from .. import house_rules, registry, trace, yesno
 
 
 class StubProposals:
     def parse(self, text: str) -> Verdict | None:
         return yesno.parse(text)
 
-    def create(self, flow: str, title: str, legs: list[Leg], approvers: list[str]) -> Proposal:
+    def create(self, flow: str, title: str, legs: list[Leg], approvers: list[str],
+               rule: HouseRule | None = None) -> Proposal:
         store = registry.get("store")
         p = Proposal(id=f"p{len(store.proposals()) + 1}", flow=flow, title=title, legs=legs,
-                     required_approvers=approvers, approvals={r: "pending" for r in approvers})
+                     required_approvers=approvers, approvals={r: "pending" for r in approvers}, rule=rule)
         store.save_proposal(p)
         trace.log("house", "proposed", f"{p.id} {title}")
         return p
@@ -29,6 +30,8 @@ class StubProposals:
         p.status = "approved" if verdict == "yes" else "rejected"
         store.save_proposal(p)
         trace.log(f"personal:{rid}", "approved" if verdict == "yes" else "rejected", p.id)
+        if p.status == "approved" and p.flow == "rule":
+            return house_rules.apply(p)
         if p.status == "approved":
             registry.get("treasurer").execute(p.id)
         return store.get_proposal(p.id)

@@ -14,7 +14,7 @@ Verdict = Literal["yes", "no"]
 ApprovalState = Literal["pending", "yes", "no"]
 LegType = Literal["transfer", "scheduled_transfer", "bill_payment", "purchase"]
 LegStatus = Literal["pending", "done", "failed"]
-Flow = Literal["rent", "front", "purchase", "utility"]
+Flow = Literal["rent", "front", "purchase", "utility", "rule"]
 ProposalStatus = Literal["pending", "approved", "executed", "rejected", "failed"]
 AgentName = Literal[
     "house", "personal:alex", "personal:sam", "personal:jordan", "treasurer", "auditor", "watcher"
@@ -78,6 +78,7 @@ class Proposal(_Model):
     required_approvers: list[str]
     approvals: dict[str, ApprovalState]
     status: ProposalStatus = "pending"
+    rule: HouseRule | None = None  # flow "rule": the rule being voted on; split {} means remove it
 
 
 class TraceEvent(_Model):
@@ -110,6 +111,7 @@ class HouseState(_Model):
     owes: list[Owe]
     proposals: list[Proposal]
     trace: list[TraceEvent]  # newest first, max 50
+    rules: list[HouseRule] = []  # house rules in force (seeded or set in chat)
 
 
 class BankTxn(_Model):
@@ -132,6 +134,7 @@ class BankView(_Model):
     balance: float
     transactions: list[BankTxn]  # newest first
     scheduled: list[ScheduledPayment]
+    profile: Profile | None = None  # what this roommate's personal agent knows (private)
 
 
 # ---------- module results ----------
@@ -142,9 +145,39 @@ class Indicator(_Model):
     inputs: dict
 
 
+CoverReason = Literal["cushion", "savings_goal", "upcoming_bills", "runway"]
+
+
 class CoverAnswer(_Model):
     level: Level
     earliest_date: str | None = None
+    reason: CoverReason | None = None  # why not ok; DM-only, never copied into Release
+
+
+class Preferences(_Model):
+    """What a roommate told their own personal agent. Private to that roommate's DM."""
+    min_buffer: float | None = None       # keep at least this much in checking
+    savings_monthly: float | None = None  # reserved every month for a goal
+    savings_label: str | None = None
+    front_cap: float | None = None        # never front more than this for someone else
+    notes: list[str] = []                 # LLM context only; never used in math
+
+
+class Recurring(_Model):
+    name: str
+    amount: float
+    next_date: str
+
+
+class Profile(_Model):
+    """Derived from bank history + executed legs (code, deterministic) plus stated preferences."""
+    income_pattern: Literal["steady", "steady_plus_side", "irregular"]
+    regular_pay: float
+    side_income_monthly: float
+    recurring: list[Recurring]
+    spend_trend_pct: float
+    preferences: Preferences
+    indicators: dict[str, Indicator]
 
 
 class SplitResult(_Model):
@@ -352,3 +385,8 @@ class Expected(_Model):
     indicators: dict[str, dict[str, Indicator]]
     proposals: dict[str, ScriptedProposal]  # "rent", "couch"
     scripts: Scripts
+
+
+# Forward references (Proposal -> HouseRule, BankView -> Profile) resolve once everything exists.
+for _m in (Proposal, HouseState, BankView):
+    _m.model_rebuild()

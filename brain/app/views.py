@@ -26,7 +26,7 @@ def house_state() -> HouseState:
             for leg in _committed_legs()
             if leg.status == "pending" and leg.to is not None]
     return HouseState(today=today, roommates=roommates, owes=owes,
-                      proposals=store.proposals(), trace=store.recent_trace(50))
+                      proposals=store.proposals(), trace=store.recent_trace(50), rules=store.house_rules())
 
 
 def bank_view(rid: str) -> BankView:
@@ -46,4 +46,5 @@ def bank_view(rid: str) -> BankView:
                                               amount=leg.amount))
     scheduled.sort(key=lambda s: s.date)
     return BankView(bank_name=fixtures.scenario().bank_name, roommate_id=rid, name=r.name,
-                    balance=nessie.balance(rid), transactions=nessie.transactions(rid), scheduled=scheduled)
+                    balance=nessie.balance(rid), transactions=nessie.transactions(rid), scheduled=scheduled,
+                    profile=registry.get("indicators").profile(rid))  # the roommate's own view only

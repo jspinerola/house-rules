@@ -95,6 +95,8 @@ We designed House Rules on a **Dual-Rail Architecture**: **code does the math an
 * Computes deterministic financial wellness indicators per roommate: `runway_days`, `rent_to_income`, `days_to_payday`, and `buffer_after(amount)`.
 * Demonstrates group financial health navigation: solving affordability without forcing overdrafts or high-interest predatory borrowing.
 
+* **Personal profiles and chat-set rules (A7 + A9, `docs/RULES_AND_PROFILES.md`):** each personal agent builds a private profile from that roommate's bank activity. Its inputs are payroll vs gig income, subscriptions renewing before payday, and indicators that update from money actually moved through Nessie. It also uses the cushion, savings goal and fronting limit the roommate sets in their DM. That profile drives the ok/tight/no answers and who fronts whom, while the group still sees only ok/tight/no. House rules like "Alex has the master, rent is 40/30/30" are set in chat and take effect only after everyone approves.
+
 ### 2. Photon (Best Use of Photon API)
 * Implemented via `spectrum-ts` on Node/Bun.
 * Enables full conversational interaction natively in **iMessage** and **Telegram** without downloading any third-party app.

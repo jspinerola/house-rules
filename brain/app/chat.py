@@ -11,6 +11,8 @@ def _approval_text(name: str, p: Proposal, names: dict[str, str]) -> str:
         return f"{name} said no, so {p.title} is off. What should change?"
     if p.status == "failed":
         return f"{p.title} was approved but a payment failed. The treasurer is reporting back."
+    if p.status in ("approved", "executed") and p.flow == "rule":
+        return f"Thanks {name}. Everyone agreed, so it's official: {p.title}."
     if p.status in ("approved", "executed"):
         return f"Thanks {name}. Everyone approved {p.title}, so the treasurer is sending it."
     waiting = [names[r] for r, v in p.approvals.items() if v == "pending"]
