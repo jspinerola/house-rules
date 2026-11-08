@@ -9,9 +9,16 @@ from . import fixtures, registry, trace
 
 
 def reset() -> None:
+    # Seed Nessie before touching the store; if seeding fails, keep the old instances so the
+    # demo stays on its previous state instead of a half-reset one. The error still propagates.
+    before = registry.snapshot()
     registry.reset()
+    try:
+        registry.get("nessie").seed(fixtures.scenario())
+    except Exception:
+        registry.restore(before)
+        raise
     registry.get("store").reset()
-    registry.get("nessie").seed(fixtures.scenario())
 
 
 def trigger(event: DemoEvent) -> None:
