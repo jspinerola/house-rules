@@ -66,7 +66,10 @@ class SqliteStore:
         self._lock = threading.RLock()
         self._db = sqlite3.connect(self.path, check_same_thread=False)
         self._db.row_factory = sqlite3.Row
+        self._db.execute("PRAGMA foreign_keys = ON")
         self._db.executescript(SCHEMA)
+        # executescript can clear connection pragmas; re-enable after schema apply
+        self._db.execute("PRAGMA foreign_keys = ON")
         if self._db.execute("SELECT COUNT(*) FROM clock").fetchone()[0] == 0:
             self.reset()
 
@@ -161,7 +164,10 @@ class SqliteStore:
 
     def save_proposal(self, p: Proposal) -> None:
         with self._lock, self._db:
-            seq = self._db.execute("SELECT COALESCE(MAX(seq), 0) + 1 FROM proposals").fetchone()[0]
+            existing = self._db.execute(
+                "SELECT seq FROM proposals WHERE id = ?", (p.id,)).fetchone()
+            seq = existing["seq"] if existing else (
+                self._db.execute("SELECT COALESCE(MAX(seq), 0) + 1 FROM proposals").fetchone()[0])
             self._db.execute(
                 "INSERT INTO proposals (id, seq, flow, title, status) VALUES (?,?,?,?,?) "
                 "ON CONFLICT (id) DO UPDATE SET flow = excluded.flow, title = excluded.title, "
