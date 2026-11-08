@@ -111,8 +111,9 @@ class HouseAgent:
         draft += " Reply yes to approve."
         replies = [_group(speak("house", flow, draft, amounts | {bill.amount}, "group"))]
         personal = registry.get("personal")
-        for debtor, _, _ in fronted:
+        for debtor, fronter, _ in fronted:
             replies += personal.explain(debtor, p)
+            replies += personal.explain(fronter, p)
         return replies
 
     # ----- group affordability -----

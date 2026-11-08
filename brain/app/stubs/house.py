@@ -23,7 +23,8 @@ class StubHouse:
         scripts = fixtures.expected().scripts
         if event == "rent_due":
             p = self._propose("rent", Ask(amount=800, by_date="2026-11-30", purpose="rent"))
-            return [_group(scripts.rent_group)] + registry.get("personal").explain("jordan", p)
+            personal = registry.get("personal")
+            return [_group(scripts.rent_group)] + personal.explain("jordan", p) + personal.explain("alex", p)
         return [_group(scripts.hello_group)]
 
     def on_message(self, sender_rid: str, text: str) -> list[Reply]:

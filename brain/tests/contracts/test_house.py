@@ -60,6 +60,14 @@ def test_rent_includes_jordan_fronting_dm(use, mode):
     assert jordan and "Alex" in jordan[0].text and "2026-12-16" in jordan[0].text
 
 
+@impl_params("house")
+def test_rent_includes_alex_fronting_dm(use, mode):
+    use(house=mode)
+    replies = registry.get("house").on_event("rent_due")
+    alex = [r for r in replies if r.target.type == "dm" and r.target.roommate_id == "alex"]
+    assert alex and "Jordan" in alex[0].text and "2026-12-16" in alex[0].text
+
+
 def test_couch_ask_personal_trace_detail(use):
     _use_real(use)
     registry.get("house").on_message("alex", "can we afford a $1,200 couch?")

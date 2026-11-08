@@ -57,6 +57,15 @@ class PersonalAgent:
                      f"now and you auto-repay {fronter} {money(repay.amount)} on {repay.date}. "
                      f"Reply yes to agree.")
             return self._dm(rid, "front", draft, {share, repay.amount})
+        fronting = next((leg for leg in proposal.legs
+                         if leg.to == rid and leg.type == "scheduled_transfer"), None)
+        if proposal.flow == "rent" and fronting is not None:
+            debtor = names[fronting.from_]
+            payday = tools.next_payday(fronting.from_, store.today())
+            draft = (f"Rent is due. {debtor}'s payday is {payday}, so the plan proposes you front "
+                     f"{debtor}'s {money(fronting.amount)} share now. {debtor} auto-repays you on "
+                     f"{fronting.date}. Reply yes to agree.")
+            return self._dm(rid, "front", draft, {fronting.amount})
         mine = [leg for leg in proposal.legs if leg.from_ == rid]
         if not mine:
             return []

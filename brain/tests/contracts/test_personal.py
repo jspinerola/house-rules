@@ -47,6 +47,15 @@ def test_jordan_dm_explains_fronting(use, mode):
     assert replies and "Alex" in replies[0].text and "2026-12-16" in replies[0].text
 
 
+@impl_params("personal")
+def test_alex_dm_explains_fronting(use, mode):
+    use(personal=mode)
+    registry.get("house").on_event("rent_due")
+    p = registry.get("store").proposals()[0]
+    replies = registry.get("personal").explain("alex", p)
+    assert replies and "Jordan" in replies[0].text and "2026-12-16" in replies[0].text
+
+
 def test_alex_sam_ask_ok_no_date(use):
     _use_real(use)
     ask = Ask(amount=800, by_date="2026-11-30", purpose="rent")
