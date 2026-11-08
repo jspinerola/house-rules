@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
-# Integration checkpoint runner (REQUIREMENTS.md I1 / I4).
+# Integration checkpoint runner (REQUIREMENTS.md I1 / I4 / I5a).
 # Usage:
 #   ./scripts/run_checkpoint.sh I1
 #   NESSIE_LIVE_TEST=1 ./scripts/run_checkpoint.sh I4
+#   RUN_LIVE_GROK=1 ./scripts/run_checkpoint.sh I5a
 #
 # On failure: reports likely module + error. Do not patch other owners' code here.
 set -euo pipefail
@@ -12,8 +13,8 @@ cd "$ROOT"
 export PYTHONPATH="${ROOT}:${ROOT}/brain${PYTHONPATH:+:$PYTHONPATH}"
 
 CP="${1:-}"
-if [[ "$CP" != "I1" && "$CP" != "I4" ]]; then
-  echo "usage: $0 I1|I4" >&2
+if [[ "$CP" != "I1" && "$CP" != "I4" && "$CP" != "I5a" ]]; then
+  echo "usage: $0 I1|I4|I5a" >&2
   exit 2
 fi
 
@@ -28,10 +29,13 @@ if [[ ! -x "$PY" || ! -x "$PYTHON" ]]; then
 fi
 
 if [[ -f "$ROOT/.env" ]]; then
+  # Like the brain's load_dotenv: .env never overrides variables already exported by the caller.
+  _caller_env="$(export -p)"
   set -a
   # shellcheck disable=SC1091
   source "$ROOT/.env"
   set +a
+  eval "$_caller_env"
 fi
 
 map_module() {
@@ -41,6 +45,9 @@ map_module() {
   elif echo "$log" | grep -qE 'app\.tools|test_tools|test_expected'; then echo tools
   elif echo "$log" | grep -qE 'app\.nessie|LiveNessie|test_nessie|NESSIE_'; then echo nessie
   elif echo "$log" | grep -qE 'app\.treasurer|test_treasurer'; then echo treasurer
+  elif echo "$log" | grep -qE 'app\.agents\.llm|wellness\.llm|GrokLLM|llm_fallback|test_llm|XAI_|GROK_'; then echo llm
+  elif echo "$log" | grep -qE 'app\.outbox|HttpOutbox|/send'; then echo outbox
+  elif echo "$log" | grep -qE 'app\.agents\.auditor|auditor fallback'; then echo auditor
   else echo unknown
   fi
 }
@@ -108,5 +115,24 @@ case "$CP" in
     run_and_report \
       brain/tests/test_checkpoints.py::test_I4_live_nessie_rent_fronting \
       "brain/tests/contracts/test_nessie.py::test_nessie_contract[live]"
+    ;;
+  I5a)
+    if [[ "${RUN_LIVE_GROK:-}" != "1" ]]; then
+      report FAIL llm "RUN_LIVE_GROK=1 is required for I5a"
+      exit 1
+    fi
+    if [[ -z "${XAI_API_KEY:-}" ]]; then
+      report FAIL llm "XAI_API_KEY is required for I5a"
+      exit 1
+    fi
+    if [[ -z "${NESSIE_API_KEY:-}" ]]; then
+      report FAIL nessie "NESSIE_API_KEY is required for I5a"
+      exit 1
+    fi
+    echo "==> I5a: I4 + LLM_MODE=grok + OUTBOX_MODE=http (GROK_MODEL=${GROK_MODEL:-unset}, opt-in)"
+    run_and_report -s \
+      brain/tests/contracts/test_llm.py::test_live_grok_returns_tool_call \
+      "brain/tests/contracts/test_llm.py::test_llm_contract[grok]" \
+      brain/tests/test_checkpoint_i5a.py::test_I5a_live_grok_full_flow
     ;;
 esac
