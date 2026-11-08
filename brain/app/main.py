@@ -1,19 +1,65 @@
 """Brain HTTP API (routes only). Everything goes through the registry."""
 from __future__ import annotations
 
+import logging
+
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.encoders import jsonable_encoder
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from contracts.models import AdvanceIn, AdvanceOut, BankView, ChatIn, ChatOut, HouseState, OkOut, TriggerIn
+from contracts.interfaces import NessieError
+from contracts.models import (
+    AdvanceIn, AdvanceOut, BankView, ChatIn, ChatOut, ErrorOut, HealthOut, HouseState, OkOut, TriggerIn,
+)
 
-from . import chat, demo, registry, views
+from . import chat, config, demo, registry, views
 from .fixtures import ROOT
 
 load_dotenv(ROOT / ".env")  # never overrides variables already set in the environment
 
+log = logging.getLogger("brain")
+
 app = FastAPI(title="House Rules brain")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+
+# Unhandled module errors -> HTTP status. Anything else is a 500.
+ERROR_STATUS: list[tuple[type[BaseException], int]] = [
+    (NessieError, 502),          # bank call failed
+    (ConnectionError, 502),      # gateway (outbox) unreachable
+    (NotImplementedError, 501),  # a <MODULE>_MODE that isn't built yet
+]
+
+
+def _error(status: int, error: str, detail: str | list) -> JSONResponse:
+    return JSONResponse(ErrorOut(error=error, detail=detail).model_dump(), status_code=status)
+
+
+# Registered before CORS so CORS wraps it and error responses keep their CORS headers.
+@app.middleware("http")
+async def json_errors(request: Request, call_next):
+    try:
+        return await call_next(request)
+    except Exception as e:  # last line of defence: never let Starlette send its plain-text 500
+        status = next((s for cls, s in ERROR_STATUS if isinstance(e, cls)), 500)
+        log.exception("%s %s failed with %d", request.method, request.url.path, status)
+        return _error(status, type(e).__name__, str(e))
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_error(_: Request, e: StarletteHTTPException) -> JSONResponse:
+    return _error(e.status_code, f"http_{e.status_code}", str(e.detail))
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error(_: Request, e: RequestValidationError) -> JSONResponse:
+    return _error(422, "validation", jsonable_encoder(e.errors()))
+
+
+app.add_middleware(CORSMiddleware, allow_origins=config.cors_origins(),
+                   allow_methods=["GET", "POST"], allow_headers=["*"])
 
 
 @app.post("/chat", response_model=ChatOut)
@@ -55,7 +101,7 @@ def demo_advance(body: AdvanceIn) -> AdvanceOut:
     return AdvanceOut(ok=True, executed=executed)
 
 
-@app.get("/health")
-def health() -> dict:
+@app.get("/health", response_model=HealthOut)
+def health() -> HealthOut:
     m = registry.modes()
-    return {"ok": True, "llm_mode": m["llm"], "nessie_mode": m["nessie"], "modes": m}
+    return HealthOut(ok=True, llm_mode=m["llm"], nessie_mode=m["nessie"], modes=m)

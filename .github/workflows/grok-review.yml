@@ -8,8 +8,27 @@ permissions:
   contents: read
   pull-requests: write
 
+concurrency:
+  group: grok-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
 jobs:
+  # Secrets cannot be read in a job-level `if`, so expose presence as an output.
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      has_key: ${{ steps.key.outputs.has_key }}
+    steps:
+      - id: key
+        env:
+          XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
+        run: |
+          if [ -n "$XAI_API_KEY" ]; then echo "has_key=true" >> "$GITHUB_OUTPUT"
+          else echo "has_key=false" >> "$GITHUB_OUTPUT"; echo "::notice::XAI_API_KEY secret not set; skipping Grok review"; fi
+
   review:
+    needs: check
+    if: needs.check.outputs.has_key == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,10 +37,10 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Grok summary and risk check
+      - name: Grok summary and risk flags
         env:
           XAI_API_KEY: ${{ secrets.XAI_API_KEY }}
-          GROK_MODEL: ${{ vars.GROK_MODEL }}
+          GROK_MODEL: ${{ secrets.GROK_MODEL }}
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}

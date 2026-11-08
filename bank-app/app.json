@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Harbor Bank (demo)",
+    "name": "Harbor Bank",
     "slug": "house-rules-bank-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -20,6 +20,9 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

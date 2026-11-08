@@ -244,6 +244,14 @@ Never cut: rent-day approvals, personal agents answering ok/tight/no, treasurer 
 
 **Source of truth:** module boundaries, stubs, flags and acceptance criteria live in [House Rules — requirements](https://claude.ai/artifact/5GdRuyuvd6fknrcD4QagtB) (modules M1–M15, foundation commit F1–F12). This spec adds the scenario, JSON shapes and workstream lists. Where the two differ, the requirements doc wins. Put both in the repo as `SPEC.md` and `REQUIREMENTS.md`.
 
+**Status (2026-11-08):** the foundation commit and P0 skeleton are merged to `main` (PR #2, CI green). F1–F12 are done. P0 skeletons are done for M1 (sqlite), M2, M3, M4, M5, M7, M8, M10 and M11, plus sim and unstyled versions of M12 and M14. M13 (bank app) is done (PR #6). What's still open:
+
+- **Teammate 2:** Tiger Data (M1 P1), hardening indicators, tools and auditor, dashboard styling (D6), chat-set house rules (A7).
+- **Teammate 3:** Photon gateway (C2–C7), switching agents to Grok wording and tool calls (B2, B4), the watcher (B8), a LangGraph house graph if wanted.
+- **Xander:** live Nessie (D2), Grok Bot secrets in CI (D7), Devpost (D8).
+
+New teammates: follow **Start here** in the requirements doc.
+
 **How to use this spec:** first, one-shot a skeleton where every external service is mocked (LLM, Nessie, Photon). Rent day should then run end to end from a terminal within the first 2 hours. After that, each person replaces one mock with the real thing and adds features one at a time, without breaking the contracts below.
 
 **Three rules that let 4 people work in parallel**
@@ -339,13 +347,15 @@ Also at the repo root, from the requirements doc: `contracts/` (models, interfac
 
 Database keys: `DB_MODE` = `sqlite` or `tiger` (skeleton starts on `sqlite`); `DATABASE_URL` = the Tiger Data Postgres connection string from the Tiger console (used by brain only).
 
+Outbox key: `OUTBOX_MODE` = `stub` or `http` (brain only; `http` needs `GATEWAY_URL`).
+
 **Run everything**
 
 ```bash
 cd brain && pip install -r requirements.txt && python -m app.seed && uvicorn app.main:app --port 8000
 cd gateway && npm i && GATEWAY_MODE=sim npm run dev      # terminal chat; photon mode for real iMessage
 cd dashboard && pnpm i && pnpm dev
-cd bank-app && npx expo start --tunnel
+cd bank-app && npx expo start --tunnel ngrok   # Metro proxies /brain/* to BRAIN_URL; see bank-app/README.md
 ```
 
 ## Shared contracts (frozen)
@@ -467,6 +477,40 @@ check(text, allowed_numbers: set[float], audience: "group"|roommate_id) -> {"ok"
 #   group messages may not contain any roommate's balance or income
 ```
 
+**Contract additions (2026-11-08, from the foundation build)**
+
+```python
+# nessie.py
+deposit(rid, amount, description) -> str     # /demo/advance credits every payday it crosses:
+                                             # Alex 12-01, Sam 12-05, Jordan 12-15 (Jordan has $860 after repaying 12-16)
+# tools.py
+next_payday(rid, after) -> date | None       # first payday strictly after `after`
+# can_cover: cash = balance - amount - legs already committed out of the account before next payday;
+#            paydays on or before `date` count; ok >= 200, tight >= 0, no < 0;
+#            earliest_date only set when level == "no"
+# proposals.py
+parse(text) -> "yes" | "no" | None           # used by /chat routing
+# agents/personal.py
+explain(rid, proposal) -> list[Reply]        # private DM about a proposal (Jordan's fronting DM)
+# store (db.py)
+roommates(); proposals(); bill(type); house_rule(type)
+# NEW module M16 outbox.py   OUTBOX_MODE=stub|http
+send(reply: Reply) -> None                   # http POSTs to gateway /send; treasurer confirmations
+                                             # and /demo/trigger messages go through it
+# contracts/models.py helper shapes
+# Ask{amount, by_date, purpose}, Release{level, earliest_date}, SplitResult, PaydayPlan,
+# Affordability{answers, plan|null}, AuditResult, LLMResult, BankTxn
+```
+
+**Behaviors pinned down**
+
+- Rent with fronting is ONE proposal (flow `rent`, all 3 approve): Sam to Alex $800 now, Alex to Maple Court $2,400 now, Jordan to Alex $800 scheduled 2026-12-16.
+- Couch: Alex buys $1,200 at Couch Co. now; Sam and Jordan each pay Alex $133.33, $133.33, $133.34 on 11-28, 12-28 and 01-28.
+- The stub treasurer runs due legs through the stub Nessie and leaves future legs pending.
+- Flags: every flag accepts `real`, mapping to sqlite / grok / live / http. Unbuilt modes (tiger, grok calls, live, photon) raise instead of falling back. `/health` returns `{ok, llm_mode, nessie_mode, modes: {...}}`.
+- E2E: three tests (rent day, payday fronting, couch), each from `/demo/reset`; run all-stub, and all-real except NESSIE, LLM and OUTBOX.
+- Sim REPL needs the brain on `OUTBOX_MODE=http`. Commands: `@alex <dm>`, `#group <text>`, `@sam #group <text>`, `/reset`, `/trigger rent_due`, `/advance YYYY-MM-DD`, `/state`.
+
 ## Workstream A (Teammate 2): data, indicators, demo clock
 
 **Owns:** `config.py`, `db.py`, `seed.py`, `indicators.py`, `tools.py`, `demo.py`, `wellness/`. **Blocks:** everyone needs `db.py` and `seed.py` by hour 2.
@@ -537,7 +581,7 @@ check(text, allowed_numbers: set[float], audience: "group"|roommate_id) -> {"ok"
 - [ ] **D3. Treasurer.** `execute(proposal_id)`: refuses unless `approved`. Runs legs dated today or earlier and leaves future legs `pending`. Records `nessie_id`, sets proposal `executed` or `failed`, writes trace events, and asks the gateway to post a confirmation ("Rent sent: $2,400 to Maple Court Apartments"). `run_due(today)` runs pending legs whose date has passed.
   - Done when: rent day with Alex fronting Jordan creates Sam to Alex $800 now, the $2,400 landlord bill payment now, and Jordan to Alex $800 that runs only after `/demo/advance {to: "2026-12-16"}`.
 - [ ] **D4. Brain read endpoints.** `GET /state` and `GET /bank/{rid}` exactly as in the contracts (coordinate with B on `main.py`).
-- [ ] **D5. Bank app (Expo).** **Design replicates the Capital One mobile app look for the Capital One Nessie demo (team says Capital One approved this). Keep a visible "Demo: Nessie sandbox data" banner on every screen, no login or credential fields, and run it only through Expo Go (never publish to an app store or a public URL)**. Screens: roommate picker, then account (balance, scheduled payments, transactions newest first). Polls `/bank/{rid}` every 2 s; new transactions slide in and the balance animates. No login, no actions.
+- [x] **D5. Bank app (Expo).** **Design replicates the Capital One mobile app look for the Capital One Nessie demo (team says Capital One approved this). No login or credential fields, and run it only through Expo Go (never publish to an app store or a public URL)**. Screens: roommate picker, then account (balance, scheduled payments, transactions newest first). Polls `/bank/{rid}` every 2 s; new transactions slide in and the balance animates. No login, no actions.
   - Done when: it runs in Expo Go on two phones over `--tunnel` and updates within 3 s of a "yes".
 - [ ] **D6. House view dashboard (Next.js).** Three columns: roommates (balance, ok/tight/no, next payday) and who owes whom; proposals with an approval check per roommate; agent trace (newest first, colored by agent). Polls `/state` every 2 s. Hidden presenter buttons for `/demo/reset`, `trigger`, `advance`.
 - [ ] **D7. Grok Bot GitHub Action.** `grok-review.yml` from the thread: on each PR, sends the diff to Grok and posts a summary plus a check for leaked keys and unapproved money moves. Add `XAI_API_KEY` as a repo secret.
