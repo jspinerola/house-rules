@@ -555,9 +555,9 @@ send(reply: Reply) -> None                   # http POSTs to gateway /send; trea
 - [ ] **C2. Photon hello world (by hour 1).** `spectrum-ts` cloud iMessage provider with `SPECTRUM_PROJECT_ID`/`SECRET`. Echo bot replies in a DM and in a test group chat that a teammate created and added the agent's number to.
 - [ ] **C3. Photon mode.** `for await (const [space, message] of app.messages)`: ignore our own messages; build `ChatIn` (`chat_type` from whether the space is a group, `sender_handle` from the message sender); POST `/chat`; send each reply to the space mapped from its target. Use `space.responding(...)` to show typing while the brain works.
   - Done when: a real "yes" from each phone approves the rent proposal.
-- [ ] **C4. Space registry.** Remember the group space on its first message, and each roommate's DM space when they text "hi". Persist it to a small JSON file so restarts don't lose it. `/health` shows what's registered.
-- [ ] **C5. `POST /send`.** Lets the brain push proactive messages (rent due, executed, nudges) to the group or a DM.
-- [ ] **C6. Dedupe and resilience.** Skip already-seen `message.id`s; retry a POST to the brain once; if the brain is down, reply "one sec, I'm restarting."
+- [x] **C4. Space registry.** Remember the group space on its first message, and each roommate's DM space when they text "hi". Persist it to a small JSON file so restarts don't lose it. `/health` shows what's registered.
+- [x] **C5. `POST /send`.** Lets the brain push proactive messages (rent due, executed, nudges) to the group or a DM.
+- [x] **C6. Dedupe and resilience.** Skip already-seen `message.id`s; retry a POST to the brain once; if the brain is down, reply "one sec, I'm restarting."
 - [ ] **C7 (P1). Tapback approvals.** Turn a 👍 reaction on a proposal message into a "yes" (check the Photon docs for how reactions arrive).
 - [ ] **C8 (P2). Voice nudge.** A Photon voice call to a roommate who hasn't approved rent by the deadline.
 

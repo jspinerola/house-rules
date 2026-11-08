@@ -113,9 +113,35 @@ Rent day in the sim REPL:
 
 `@alex <text>` is a DM from Alex; `#group <text>` posts to the group as the last `@` sender (`@sam #group hi` to pick one).
 
+### Photon mode (real phones)
+
+The gateway talks to iMessage through Photon (`spectrum-ts`). On Photon's shared pool there are no group chats, so
+`GATEWAY_FANOUT=1` relays every house message to all three DMs, prefixed "🏠 House:". Personal-agent replies stay
+unprefixed and private.
+
+1. In the Photon dashboard, add every roommate's phone number to the project. Numbers that aren't added can text
+   in, but the agent can't text them back ("Target not allowed for this project"). Each person texts the Photon
+   number they were given.
+2. In `.env`: `GATEWAY_MODE=photon`, `GATEWAY_FANOUT=1`, `SPECTRUM_PROJECT_ID`, `SPECTRUM_PROJECT_SECRET`, and
+   `ALEX_HANDLE` / `SAM_HANDLE` / `JORDAN_HANDLE` as `+1XXXXXXXXXX`.
+3. Run it. If `uvicorn` isn't on your PATH, use `../.venv/bin/uvicorn`.
+
+```bash
+cd brain && uvicorn app.main:app --port 8000         # terminal 1; reads .env itself
+curl -s -X POST localhost:8000/demo/reset            # after every brain restart (reseeds live Nessie)
+cd gateway && npm run dev                            # terminal 2; reads ../.env
+```
+
+4. Each phone texts "hi". `curl -s localhost:8787/health` should list all three in `dms_registered`.
+
+In a DM, start a message with `#house` to talk to the house agent (Grok picks the flow), e.g.
+`#house rent's due soon` or `#house can we afford a $1,200 couch?`. Reply `yes` / `no` in your own DM to approve.
+Anything else goes to your personal agent. Friends can watch their account live by opening the bank app in Expo Go
+from the `npx expo start --tunnel ngrok` QR code.
+
 ### Module flags
 
-Every module is reached through `brain/app/registry.py` and picks its implementation from `<MODULE>_MODE` (default `stub`): `DB_MODE` (`stub|sqlite|tiger`), `INDICATORS_MODE`, `TOOLS_MODE`, `PROPOSALS_MODE`, `AUDITOR_MODE`, `PERSONAL_MODE`, `HOUSE_MODE`, `TREASURER_MODE` (`stub|real`), `LLM_MODE` (`stub|grok`), `NESSIE_MODE` (`stub|live`), `OUTBOX_MODE` (`stub|http`), `GATEWAY_MODE` (`sim|photon`). `real` works for every flag. `tiger`, `live` and `photon` raise until they are built. `GET /health` shows every module's mode.
+Every module is reached through `brain/app/registry.py` and picks its implementation from `<MODULE>_MODE` (default `stub`): `DB_MODE` (`stub|sqlite|tiger`), `INDICATORS_MODE`, `TOOLS_MODE`, `PROPOSALS_MODE`, `AUDITOR_MODE`, `PERSONAL_MODE`, `HOUSE_MODE`, `TREASURER_MODE` (`stub|real`), `LLM_MODE` (`stub|grok`), `NESSIE_MODE` (`stub|live`), `OUTBOX_MODE` (`stub|http`), `GATEWAY_MODE` (`sim|photon`). `real` works for every flag. `tiger` raises until it is built. `GET /health` shows every module's mode.
 
 `pytest` runs the e2e test twice: all stubs, and all real modules except Nessie, LLM and Outbox.
 
