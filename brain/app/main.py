@@ -1,12 +1,16 @@
 """Brain HTTP API (routes only). Everything goes through the registry."""
 from __future__ import annotations
 
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from contracts.models import AdvanceIn, AdvanceOut, BankView, ChatIn, ChatOut, HouseState, OkOut, TriggerIn
 
 from . import chat, demo, registry, views
+from .fixtures import ROOT
+
+load_dotenv(ROOT / ".env")  # never overrides variables already set in the environment
 
 app = FastAPI(title="House Rules brain")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
