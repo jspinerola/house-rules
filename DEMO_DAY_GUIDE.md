@@ -169,7 +169,7 @@ Paydays land, Kevin's scheduled $720 goes back to Julian, and the thread disappe
 `scripts/record_demo.py` is a demo director. It plays the script above against the running brain and records the screens for you, using the same timing on every take.
 
 ```bash
-uv run --with playwright playwright install ffmpeg      # once: the video encoder
+uv run --no-project --with playwright playwright install ffmpeg      # once: the video encoder
 uv run scripts/record_demo.py                           # reset, play every beat, record
 uv run scripts/record_demo.py --pace 1.5                # slower, for narration
 uv run scripts/record_demo.py --watch 300               # record only; people type the script for real

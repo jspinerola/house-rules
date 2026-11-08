@@ -4,7 +4,7 @@
 # ///
 """Demo director: plays the House Rules demo against a running brain and records it.
 
-    uv run --with playwright playwright install ffmpeg   # once: Playwright's video encoder
+    uv run --no-project --with playwright playwright install ffmpeg   # once: Playwright's video encoder
     uv run scripts/record_demo.py                 # drive the demo + record dashboard and bank app
     uv run scripts/record_demo.py --watch 240     # only record (people type in the real chats)
 
