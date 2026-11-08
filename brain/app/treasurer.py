@@ -10,6 +10,7 @@ from contracts.interfaces import NessieError
 from contracts.models import GroupTarget, Leg, Proposal, Reply
 
 from . import registry, trace
+from .fmt import money
 
 
 class Treasurer:
@@ -18,7 +19,7 @@ class Treasurer:
 
     def _describe(self, leg: Leg, names: dict[str, str]) -> str:
         dest = names[leg.to] if leg.to else leg.payee
-        return f"{names[leg.from_]} to {dest} ${leg.amount:,.2f}"
+        return f"{names[leg.from_]} to {dest} {money(leg.amount)}"
 
     def _run_leg(self, leg: Leg, title: str) -> str:
         nessie = registry.get("nessie")

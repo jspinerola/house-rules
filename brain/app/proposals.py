@@ -23,9 +23,7 @@ class Proposals:
         p = Proposal(id=f"p{len(store.proposals()) + 1}", flow=flow, title=title, legs=legs,
                      required_approvers=approvers, approvals={r: "pending" for r in approvers})
         store.save_proposal(p)
-        total = round(sum(leg.amount for leg in legs), 2)
-        trace.log("house", "proposed", f"{p.id} {title}: {len(legs)} legs, needs {', '.join(approvers)}"
-                  f" (${total:,.2f} moved)")
+        trace.log("house", "proposed", f"{p.id} {title}: {len(legs)} legs, needs {', '.join(approvers)}")
         return p
 
     def record_reply(self, rid: str, text: str) -> Proposal | None:

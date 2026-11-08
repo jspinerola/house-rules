@@ -68,3 +68,26 @@ def get_llm(spec="mock"):
     if kind == "openai":
         return OpenAILLM(model or "gpt-4o-mini")
     raise ValueError(f"unknown LLM spec: {spec}")
+
+
+class GrokLLM:
+    """House Rules addition: xAI Grok via its OpenAI-compatible endpoint, with tool calling.
+
+    Returns the raw assistant message dict ({"content", "tool_calls"}). Needs XAI_API_KEY.
+    """
+
+    def __init__(self, model=None, base_url="https://api.x.ai/v1", timeout=8):
+        self.model = model or os.environ.get("GROK_MODEL", "")
+        if not self.model:
+            raise ValueError("GROK_MODEL is not set")
+        self.name, self.base_url, self.timeout = f"grok:{self.model}", base_url, timeout
+
+    def chat(self, messages, tools=None):
+        key = os.environ["XAI_API_KEY"]
+        body = {"model": self.model, "messages": messages}
+        if tools:
+            body["tools"] = tools
+        req = urllib.request.Request(f"{self.base_url}/chat/completions", json.dumps(body).encode(),
+                                     {"Content-Type": "application/json", "Authorization": "Bearer " + key})
+        with urllib.request.urlopen(req, timeout=self.timeout) as r:
+            return json.load(r)["choices"][0]["message"]
