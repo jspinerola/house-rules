@@ -1,9 +1,9 @@
 # House rules from chat + personal profiles from bank data
 
-Status: **built 2026-11-08** on `feat/rules-and-profiles`. Rent and electric rules work; purchase
-rules are not built yet (see Build order). This is a contract change: it adds fields and methods
-to `contracts/` (see [Contract changes](#contract-changes)). Per AGENTS.md, the team reads this
-before building against it.
+Status: **built 2026-11-08** (`feat/rules-and-profiles`, `feat/purchase-rules`). Rent, electric
+and purchase rules work, plus one-off uneven splits for a single purchase. This is a contract
+change: it adds fields and methods to `contracts/` (see [Contract changes](#contract-changes)).
+Per AGENTS.md, the team reads this before building against it.
 
 Owners follow AGENTS.md: Store, indicators, tools and `wellness/` are **A**; agents and proposals
 are **B**; dashboard and bank app are **D**.
@@ -69,9 +69,30 @@ rent split" removes the rule through the same yes-from-everyone path.
 7. **Remove.** `remove_rule(bill)` creates a `rule` proposal with `rule.split = {}`. On approval
    it deletes the row.
 
-Supported bill types: `rent` and `electric`. **Not built yet:** `purchase` (a default split for
-shared buys). It needs per-share affordability in `group_affordability`, so it was cut first, as
-planned.
+Supported bill types: `rent`, `electric` and `purchase`.
+
+**Purchase rules.** `purchase` is the default split for shared buys ("Alex pays 50% of shared
+furniture, Alex keeps it when we move out"). There is no bill behind it, so the vote previews the
+split on the price someone named, or on a $100 example. `group_affordability(item, price,
+months_options, shares=None)` takes each roommate's share from, in order:
+1. a one-off `shares` (fractions) for this purchase only;
+2. the `purchase` house rule;
+3. an even split.
+
+Each roommate is checked with `can_cover` on their own monthly amount, and the plan is the first
+month option where nobody is `no`. `AffordPlan.monthly` holds the per-roommate amounts, and is
+empty for an even split, so the locked couch result is unchanged. The house agent builds the legs
+from those amounts; each payer's last month absorbs the leftover cents, so totals are exact.
+
+**One-off splits.** "Alex pays half of the couch since it's in Alex's room" doesn't need a rule.
+The house agent passes `shares` and `reason` to `group_affordability` or `what_if_purchase`, and
+nothing is saved. `what_if_purchase` returns each person's total, monthly amount and ok/tight/no
+for up front and for spread out, so the LLM quotes each person's own numbers.
+
+**No yes/no questions.** "yes" approves the oldest open proposal, so the house agent never ends
+with a yes/no question, and never claims an approval a tool didn't record. In a live run, "want me
+to propose a rule?" followed by "yes" approved the pending couch instead. Proposing only opens a
+vote, so the agent proposes, or says "say the word and I'll put it to a vote".
 
 ### Where it shows
 
@@ -248,6 +269,11 @@ class Profile(_Model):
     preferences: Preferences
     indicators: dict[str, Indicator]
 
+class AffordPlan(_Model):
+    months: int
+    per_person_monthly: float
+    monthly: dict[str, float] = {}       # per roommate when shares are uneven; {} = even split
+
 class CoverAnswer(_Model):
     level: Level
     earliest_date: str | None = None
@@ -277,6 +303,8 @@ class Indicators(Protocol):
 
 class Tools(Protocol):
     def split_bill(self, bill_type: str, amount: float, rule: HouseRule | None = None) -> SplitResult: ...
+    def group_affordability(self, item: str, price: float, months_options=(1, 3),
+                            shares: dict[str, float] | None = None) -> Affordability: ...
 ```
 
 SQLite (`brain/app/db.py`): the `house_rules` table already exists. Add a `preferences` table
@@ -353,4 +381,4 @@ both stub and real modes. `tests/test_e2e.py` stays green with all mocks on.
 6. Personal tools (`my_profile`, `set_preference`), auditor private figures, and the bank-app card.
 7. Live Grok run of the four demo beats, then DEVPOST and SLIDES polish.
 
-Cut order if behind: the bank-app card, then `purchase` rules, then `spend_trend_pct`.
+Cut order if behind: the bank-app card, then `spend_trend_pct`.

@@ -55,8 +55,9 @@ class Tools(Protocol):  # M3, TOOLS_MODE (pure code, no LLM)
     def can_cover(self, rid: str, amount: float, date: str) -> CoverAnswer: ...
     def payday_plan(self, rid: str, amount: float) -> PaydayPlan: ...
     def group_affordability(
-        self, item: str, price: float, months_options: tuple[int, ...] = (1, 3)
-    ) -> Affordability: ...
+        self, item: str, price: float, months_options: tuple[int, ...] = (1, 3),
+        shares: dict[str, float] | None = None,
+    ) -> Affordability: ...  # shares: one-off fractions; else the "purchase" house rule; else even
     def next_payday(self, rid: str, after: str) -> str | None: ...  # first payday strictly after `after`
 
 

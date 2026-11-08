@@ -194,7 +194,8 @@ can_cover(roommate_id, amount, date) -> {"level": "ok"|"tight"|"no", "earliest_d
 # ok = balance (minus recurring charges before payday) stays >= max(200, min_buffer) + savings_monthly;
 # tight >= 0; no = negative; ok -> tight when runway_days is risk. reason is DM-only.
 payday_plan(roommate_id, amount) -> {"fronter": roommate_id, "repay_date": str}   # skips fronters over their front_cap
-group_affordability(item, price, months_options=[1, 3]) -> {"answers": {...}, "plan": {...}}
+group_affordability(item, price, months_options=[1, 3], shares=None) -> {"answers": {...}, "plan": {...}}
+# shares: one-off split for this purchase; else the "purchase" house rule; else even (plan.monthly per roommate)
 
 # nessie.py [D] — live and mock same class
 balance / transactions / transfer / pay_bill / purchase
