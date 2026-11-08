@@ -21,7 +21,7 @@ What it does, in drive mode:
 
 Handles: <ID>_HANDLE from the environment, then the repo .env, then sim:<id>. URLs come from
 --brain / --dashboard / --bank or BRAIN_URL / GATEWAY_URL. Browser: system Chromium by default
-(--chromium PATH); run `uv run --with playwright playwright install chromium` to use Playwright's own.
+(--chromium PATH); run `uv run --no-project --with playwright playwright install chromium` to use Playwright's own.
 """
 from __future__ import annotations
 
