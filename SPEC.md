@@ -244,7 +244,7 @@ Never cut: rent-day approvals, personal agents answering ok/tight/no, treasurer 
 
 **Source of truth:** module boundaries, stubs, flags and acceptance criteria live in [House Rules — requirements](https://claude.ai/artifact/5GdRuyuvd6fknrcD4QagtB) (modules M1–M15, foundation commit F1–F12). This spec adds the scenario, JSON shapes and workstream lists. Where the two differ, the requirements doc wins. Put both in the repo as `SPEC.md` and `REQUIREMENTS.md`.
 
-**Status (2026-11-08):** the foundation commit and P0 skeleton are built on branch `foundation` (PR open to `main`). F1–F12 are done except F11 (CI), which waits for green checks. P0 skeletons are done for M1 (sqlite), M2, M3, M4, M5, M7, M8, M10 and M11, plus sim and unstyled versions of M12, M13 and M14. What's still open:
+**Status (2026-11-08):** the foundation commit and P0 skeleton are merged to `main` (PR #2, CI green). F1–F12 are done. P0 skeletons are done for M1 (sqlite), M2, M3, M4, M5, M7, M8, M10 and M11, plus sim and unstyled versions of M12, M13 and M14. What's still open:
 
 - **Teammate 2:** Tiger Data (M1 P1), hardening indicators, tools and auditor, dashboard styling (D6), chat-set house rules (A7).
 - **Teammate 3:** Photon gateway (C2–C7), switching agents to Grok wording and tool calls (B2, B4), the watcher (B8), a LangGraph house graph if wanted.
