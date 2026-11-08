@@ -45,11 +45,27 @@ export function label(t: Target): string {
   return t.type === "group" ? "[group]" : `[dm:${t.roommate_id}]`;
 }
 
+/** Phone -> E.164 (10 digits assume +1); email/other -> trimmed lowercase. */
+export function normalizeHandle(handle: string): string {
+  const h = handle.trim();
+  if (h.includes("@") || h.includes(":")) return h.toLowerCase();
+  const digits = h.replace(/\D/g, "");
+  if (digits.length < 7) return h.toLowerCase();
+  if (h.startsWith("+")) return `+${digits}`;
+  return digits.length === 10 ? `+1${digits}` : `+${digits}`;
+}
+
+/** For logs: never print a full phone/email, only the last 4 characters. */
+export function maskHandle(handle: string): string {
+  return `***${handle.slice(-4)}`;
+}
+
 export function roommateFromHandle(handle: string): RoommateId | null {
   const lower = handle.toLowerCase();
+  const norm = normalizeHandle(handle);
   for (const rid of ROOMMATES) {
     const env = process.env[`${rid.toUpperCase()}_HANDLE`];
-    if (env && env === handle) return rid;
+    if (env && (env === handle || normalizeHandle(env) === norm)) return rid;
     if (lower === `sim:${rid}` || lower === rid || lower.endsWith(`:${rid}`)) return rid;
   }
   return null;
@@ -153,26 +169,35 @@ export class Gateway {
     if (this.seen.has(chatIn.message_id)) return [];
     this.seen.add(chatIn.message_id);
 
-    if (chatIn.chat_type === "group") {
-      if (!this.spaces.group) this.registerGroup("sim-group");
-    } else {
-      const rid = roommateFromHandle(chatIn.sender_handle);
-      if (rid && !this.spaces.dms[rid]) this.registerDm(rid, `sim-dm-${rid}`);
+    // Sim has no real spaces; photon registers real space ids before calling in.
+    if (this.mode === "sim") {
+      if (chatIn.chat_type === "group") {
+        if (!this.spaces.group) this.registerGroup("sim-group");
+      } else {
+        const rid = roommateFromHandle(chatIn.sender_handle);
+        if (rid && !this.spaces.dms[rid]) this.registerDm(rid, `sim-dm-${rid}`);
+      }
     }
 
-    try {
-      const out = await this.brainChat(chatIn);
+    let out: ChatOut | null = null;
+    for (let attempt = 1; attempt <= 2 && !out; attempt++) {
+      try {
+        out = await this.brainChat(chatIn);
+      } catch (e) {
+        console.error(`brain /chat attempt ${attempt} failed: ${(e as Error).message}`);
+      }
+    }
+    if (out) {
       for (const r of out.replies) await this.deliver(r);
       return out.replies;
-    } catch {
-      const rid = roommateFromHandle(chatIn.sender_handle) ?? "alex";
-      const fallback: Reply = {
-        target: chatIn.chat_type === "group" ? { type: "group" } : { type: "dm", roommate_id: rid },
-        text: ONE_SEC,
-      };
-      await this.deliver(fallback);
-      return [fallback];
     }
+    const rid = roommateFromHandle(chatIn.sender_handle) ?? "alex";
+    const fallback: Reply = {
+      target: chatIn.chat_type === "group" ? { type: "group" } : { type: "dm", roommate_id: rid },
+      text: ONE_SEC,
+    };
+    await this.deliver(fallback);
+    return [fallback];
   }
 
   startServer(port: number, prefix = "(push) "): Server {
