@@ -61,3 +61,5 @@ export type BankView = {
 };
 
 export type Health = { ok: boolean; llm_mode: string; nessie_mode: string; modes: Record<string, string> };
+// Body of every non-2xx brain response.
+export type ErrorOut = { ok: false; error: string; detail: string | unknown[] };

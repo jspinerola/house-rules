@@ -218,6 +218,20 @@ class SendIn(_Model):
     text: str
 
 
+class HealthOut(_Model):
+    ok: bool
+    llm_mode: str
+    nessie_mode: str
+    modes: dict[str, str]  # every module -> its active mode
+
+
+class ErrorOut(_Model):
+    """Body of every non-2xx brain response."""
+    ok: Literal[False] = False
+    error: str              # exception class, "http_<status>" or "validation"
+    detail: str | list
+
+
 # ---------- scenario fixture ----------
 
 class PayRule(_Model):
