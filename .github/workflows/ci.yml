@@ -7,16 +7,26 @@ on:
 
 jobs:
   pytest:
+    name: pytest (${{ matrix.profile }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # stub = every flag on stub; real = everything real except NESSIE, LLM, OUTBOX.
+        profile: [stub, real]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+          cache: pip
+          cache-dependency-path: brain/requirements.txt
       - name: Install brain deps
         working-directory: brain
         run: pip install -r requirements.txt
-      - name: pytest (all flags on stub, plus real-module profile)
+      - name: pytest
+        env:
+          TEST_PROFILE: ${{ matrix.profile }}
         run: pytest -q
 
   tsc:
