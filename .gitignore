@@ -31,3 +31,6 @@ Thumbs.db
 brain/*.db
 *.tsbuildinfo
 next-env.d.ts.bak
+
+# demo director output (scripts/record_demo.py)
+recordings/

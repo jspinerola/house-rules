@@ -25,6 +25,9 @@ MAX_CALLS_PER_STEP = 4
 # "I'll check" / "let me set that up" without a tool call: the model announced work it didn't do.
 PROMISE = re.compile(r"\b(?:i'?ll|i will|let me|gonna|going to)\s+(?:go\s+)?(?:check|set|post|run|propose|"
                      r"look|start|pull|get|crunch|ask|figure|kick)\b", re.I)
+# Asking permission instead of acting: a "yes" to this would approve whatever proposal is open.
+ASKS = re.compile(r"\b(?:want me to|should i|shall i|do you want|if you want me to|"
+                  r"reply yes (?:if|and|to (?:start|have|let))|say yes (?:if|and))\b", re.I)
 
 
 @dataclass
@@ -83,11 +86,11 @@ def run(agent: str, system: str, user: str, tools: list[AgentTool]) -> Outcome:
         result = llm.chat(out.messages, specs)
         if not result.tool_calls:
             text = result.text.strip()
-            if not nudged and (PROMISE.search(text) or any(t.name in text for t in tools)):
+            if not nudged and (PROMISE.search(text) or ASKS.search(text) or any(t.name in text for t in tools)):
                 nudged = True
                 trace.log(agent, "nudged", f"announced instead of calling a tool: {text[:60]}")
                 out.messages += [{"role": "assistant", "content": text},
-                                 {"role": "user", "content": "Don't announce it: call the tool now, then answer."}]
+                                 {"role": "user", "content": "Don't announce it or ask permission: call the tool now, then answer."}]
                 continue
             out.text = text
             return out

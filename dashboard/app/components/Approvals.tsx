@@ -30,6 +30,7 @@ function legLines(legs: Leg[], today: string, name: (id: string) => string): Lin
     if (g.length === 1) return { text: `${verb}, ${money(leg.amount)} ${when(leg.date)}`, status };
     const total = Math.round(g.reduce((s, l) => s + l.amount, 0) * 100) / 100;
     const dates = g.map((l) => l.date).sort();
+    if (dates[0] === dates[dates.length - 1]) return { text: `${verb}, ${money(total)} ${when(dates[0])}`, status };
     return {
       text: `${verb} ${money(total)} in ${g.length} payments, ${shortDate(dates[0])} to ${shortDate(dates[dates.length - 1])}`,
       status,

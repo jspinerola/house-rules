@@ -75,7 +75,7 @@ If time is short, cut slide 6 first; rent day is the moment that matters.
 ---
 
 ### Slide 6: Live: the couch and "why am I tight?" (2:10 – 2:35)
-* **Do (group, as Julian):** `what if xander paid half of a 1200 couch since it's going in his room?`, then Xander says `lets do that`.
+* **Do (group, as Julian):** `can we get a 1200 couch? xander pays half since it's going in his room`, then everyone replies `yes`.
   * The plan: Xander $200/mo, Julian $100/mo, Kevin $100/mo over 3 months. Up front didn't work for Kevin, so the house spread it out.
 * **Do (Kevin's DM):** `can i afford a 100 dinner this week?`
   * The answer comes from Kevin's own history: StreamFlix and his phone plan renew before payday, and gig income isn't counted as guaranteed.
