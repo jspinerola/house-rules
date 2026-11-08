@@ -13,17 +13,6 @@ import { BRAIN_URL, usePoll } from "./lib/brain";
 
 const HOUSE_NAME = process.env.NEXT_PUBLIC_HOUSE_NAME ?? "Maple Court";
 
-function Mark() {
-  return (
-    <svg viewBox="0 0 32 32" aria-hidden className="h-9 w-9">
-      <circle cx="16" cy="16" r="13" fill="none" stroke="#14171c" strokeWidth="2.2" />
-      <circle cx="16" cy="3" r="3.2" fill="#3366ff" />
-      <circle cx="27.3" cy="22.5" r="3.2" fill="#f2694b" />
-      <circle cx="4.7" cy="22.5" r="3.2" fill="#14a3a3" />
-    </svg>
-  );
-}
-
 const list = (names: string[]) =>
   names.length <= 1 ? names.join("") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
 
@@ -45,11 +34,13 @@ export default function Page() {
   return (
     <main className="mx-auto flex min-h-screen max-w-[1440px] flex-col px-5 pb-16 pt-6 sm:px-10">
       <header className="flex flex-wrap items-center justify-between gap-4 pb-6">
-        <div className="flex items-center gap-3.5">
-          <Mark />
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{HOUSE_NAME}</h1>
-            <p className="text-sm text-slate">{state ? list(state.roommates.map((r) => r.name)) : "House Rules"}</p>
+        <div className="flex items-center gap-4">
+          {/* eslint-disable-next-line @next/next/no-img-element -- static logo, no optimisation needed */}
+          <img src="/house-rules-logo.png" alt="House Rules" width={310} height={240} className="h-14 w-auto" />
+          <h1 className="sr-only">House Rules</h1>
+          <div className="border-l border-hairline pl-4">
+            <div className="font-semibold">{HOUSE_NAME}</div>
+            {state && <p className="text-sm text-slate">{list(state.roommates.map((r) => r.name))}</p>}
           </div>
         </div>
         <div className="flex items-center gap-4">
