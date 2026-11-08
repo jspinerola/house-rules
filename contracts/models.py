@@ -191,7 +191,8 @@ class PaydayPlan(_Model):
 
 class AffordPlan(_Model):
     months: int
-    per_person_monthly: float
+    per_person_monthly: float           # the even-split monthly amount
+    monthly: dict[str, float] = {}      # per roommate, only when shares are uneven (purchase rule / one-off)
 
 
 class Affordability(_Model):

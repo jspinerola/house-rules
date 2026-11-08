@@ -7,6 +7,7 @@ Rules (REQUIREMENTS M3, docs/RULES_AND_PROFILES.md):
   payday_plan: fronter = roommate with the highest buffer_after(amount) whose front_cap allows it;
     repay = day after payday.
   group_affordability: try each months option in order; first plan where nobody is "no" wins.
+    Each roommate's share comes from one-off `shares`, else the "purchase" house rule, else even.
 """
 from __future__ import annotations
 
@@ -149,16 +150,27 @@ class Tools:
             raise ValueError(f"no next payday for {rid!r}")
         return PaydayPlan(fronter=fronter, repay_date=(_d(payday) + timedelta(days=1)).isoformat())
 
-    def group_affordability(self, item: str, price: float,
-                            months_options: tuple[int, ...] = (1, 3)) -> Affordability:
+    def purchase_shares(self, price: float, shares: dict[str, float] | None = None) -> dict[str, float]:
+        """Dollar share of a purchase per roommate: one-off fractions, else the purchase rule, else even."""
+        rule = None
+        if shares is not None:
+            rule = HouseRule(id="one-off", bill_type="purchase", split=shares, source_text="one-off split")
+        return self.split_bill("purchase", price, rule=rule).shares
+
+    def group_affordability(self, item: str, price: float, months_options: tuple[int, ...] = (1, 3),
+                            shares: dict[str, float] | None = None) -> Affordability:
         price = _money(price, "price")
         store = registry.get("store")
         ids = [r.id for r in store.roommates()]
         today = store.today()
+        owed = self.purchase_shares(price, shares)
+        uneven = max(owed.values()) - min(owed.values()) > 0.011  # rounding cents are still even
         answers: dict[str, Level] = {}
         for months in months_options:
-            per = round(price / len(ids) / months, 2)
-            answers = {rid: self.can_cover(rid, per, today).level for rid in ids}
+            even = round(price / len(ids) / months, 2)
+            monthly = {rid: round(owed[rid] / months, 2) for rid in ids} if uneven else {rid: even for rid in ids}
+            answers = {rid: self.can_cover(rid, monthly[rid], today).level for rid in ids}
             if "no" not in answers.values():
-                return Affordability(answers=answers, plan=AffordPlan(months=months, per_person_monthly=per))
+                return Affordability(answers=answers, plan=AffordPlan(
+                    months=months, per_person_monthly=even, monthly=monthly if uneven else {}))
         return Affordability(answers=answers, plan=None)

@@ -522,6 +522,8 @@ get_preferences(rid) -> Preferences; save_preferences(rid, prefs)
 profile(rid) -> Profile          # store history + executed legs (real Nessie ids), workshop metrics
 # tools.py
 split_bill(bill_type, amount, rule=None)   # rule = preview a candidate without saving
+group_affordability(item, price, months_options=(1, 3), shares=None)
+#   shares: one-off fractions, else the "purchase" house rule, else even; AffordPlan.monthly per roommate
 # can_cover: also subtracts recurring charges before the horizon;
 #   floor = max(200, min_buffer) + savings_monthly; ok -> tight when runway_days is risk
 # payday_plan: skips fronters whose front_cap < amount

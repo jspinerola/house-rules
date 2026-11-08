@@ -24,6 +24,9 @@ from .voice import PERSONAS, RULES, speak
 BILL_FLOWS = {"rent_due": ("rent", "rent"), "electric_bill": ("electric", "utility")}
 BILL_EVENTS = {"rent": "rent_due", "electric": "electric_bill"}
 BILL_FLOW = {bill: flow for bill, flow in BILL_FLOWS.values()}  # "rent" -> "rent", "electric" -> "utility"
+BILL_FLOW["purchase"] = "purchase"  # the default split for shared buys (house rule, no bill behind it)
+RULE_BILLS = sorted(BILL_FLOW)
+RULE_EXAMPLE = 100.0  # preview amount for a purchase rule when nobody named a price
 
 # The LLM picks tools and explains; code does every number (AGENTS.md).
 AGENT = """You run the house's money in this group chat. Use tools for every fact or number; never
@@ -31,13 +34,21 @@ do arithmetic yourself (no rounding, no totals), quote tool numbers exactly:
 - house_status for bills, due dates, house rules, pending proposals, who owes whom.
 - split_bill / what_if_purchase / can_cover to look things up without committing to anything.
 - propose_rule when roommates agree on how a bill should be split and why ("Alex has the master,
-  rent 40/30/30"); remove_rule to go back to an even split. Both post a vote, so call and stop.
+  rent 40/30/30"; bill "purchase" = the default split for shared buys); remove_rule to go back to
+  an even split. Both post a vote, so call and stop.
+- For one purchase split unevenly ("Alex pays half since it's in Alex's room"), pass shares and
+  reason to group_affordability / what_if_purchase instead of making a house rule.
 - start_bill or group_affordability ONLY when the roommates want to actually set up a bill payment
   or purchase; those post the proposal themselves, so call them and stop.
 Never say you'll check or set something up: call the tool in this same turn.
 "can we afford X" -> group_affordability; "what if / how about over N months" -> what_if_purchase;
 "let's do rent" / "rent is due" -> start_bill. Only say "reply yes" right after an ACTION posted it.
-Pass a price only if a roommate stated it. If nothing needs a tool (greetings, jokes, thanks), just reply. Never mention balances or incomes; personal agents only tell you ok, tight, no or a date."""
+Pass a price only if a roommate stated it. If nothing needs a tool (greetings, jokes, thanks), just reply.
+Never end with a yes/no question: "yes" approves whatever proposal is open. Proposing only opens a
+vote, so when someone states a lasting split ("Alex should pay 50% of all shared furniture") call
+propose_rule right away; for anything else say "say the word and I'll put it to a vote".
+You cannot record approvals. Only a reply of yes / y / yep / ok / approve counts; if someone agrees in
+other words ("lets do that"), tell them to reply yes. Never say someone approved unless a tool says so. Never mention balances or incomes; personal agents only tell you ok, tight, no or a date."""
 INTRO = ("I'm the house agent. I split bills by your house rules, time payments to paydays, and answer "
          "things like \"can we afford a $1,200 couch?\"")
 # "$1,200", "1200", "1.2k"; the amount right after it is the item ("1200 couch").
@@ -186,7 +197,9 @@ class HouseAgent:
     # ----- group affordability -----
 
     def _afford(self, text: str, price: float | None = None, item: str | None = None,
-                months: int | None = None, typed_in: str | None = None) -> list[Reply]:
+                months: int | None = None, typed_in: str | None = None,
+                shares: dict[str, float] | None = None, reason: str | None = None) -> list[Reply]:
+        """Shared purchase: `shares` is a one-off split (fractions); else the purchase rule; else even."""
         store, tools = registry.get("store"), registry.get("tools")
         parsed_price, parsed_item = parse_purchase(text)
         if price is None or not _typed(price, typed_in or text):
@@ -202,17 +215,23 @@ class HouseAgent:
         names = self._names()
         ids = list(names)
         today = store.today()
-        upfront = round(price / len(ids), 2)
+        one_off = (HouseRule(id="one-off", bill_type="purchase", split=shares, source_text=reason or "one-off")
+                   if shares is not None else None)
+        rule = one_off or store.house_rule("purchase")
+        owed = tools.split_bill("purchase", price, rule=one_off).shares
+        why = f" ({rule.source_text})" if rule and rule.split else ""
 
-        aff = tools.group_affordability(item, price, (months,) if months else (1, 3))
+        aff = tools.group_affordability(item, price, (months,) if months else (1, 3), shares=shares)
         if aff.plan is None:
             for rid in ids:
-                self._ask_personal(rid, upfront, today, item)
+                self._ask_personal(rid, owed[rid], today, item)
             return [self._say("couch", f"Even spread out, not everyone can swing a {money(price)} {item} "
                               "right now. Want to look at something cheaper?", {price})]
 
-        per, months = aff.plan.per_person_monthly, aff.plan.months
-        releases = {rid: self._ask_personal(rid, per, today, item) for rid in ids}
+        months = aff.plan.months
+        monthly = aff.plan.monthly or {rid: aff.plan.per_person_monthly for rid in ids}
+        last = {rid: round(owed[rid] - monthly[rid] * (months - 1), 2) for rid in ids}
+        releases = {rid: self._ask_personal(rid, monthly[rid], today, item) for rid in ids}
         weakest = min(ids, key=lambda r: ["no", "tight", "ok"].index(releases[r].level))
         buyer = tools.payday_plan(weakest, price).fronter if releases[weakest].level != "ok" else ids[0]
         merchant = next((mm for mm in store_merchants() if item.split()[-1] in mm.lower()),
@@ -220,26 +239,34 @@ class HouseAgent:
 
         start = date.fromisoformat(today)
         legs = [Leg(type="purchase", **{"from": buyer}, payee=merchant, amount=price, date=today)]
-        last = round(upfront - per * (months - 1), 2)
         for k in range(months):
             for rid in ids:
                 if rid != buyer:
                     legs.append(Leg(type="scheduled_transfer", **{"from": rid}, to=buyer,
-                                    amount=last if k == months - 1 else per,
+                                    amount=last[rid] if k == months - 1 else monthly[rid],
                                     date=_shift_months(start, k).isoformat()))
         self._create("purchase", f"{item.capitalize()} from {merchant}", legs, ids)
 
         levels = ", ".join(f"{names[r]} {releases[r].level}" for r in ids)
         payers = _join([names[r] for r in ids if r != buyer])
-        if months == 1:
-            draft = (f"Everyone can cover {money(per)} each up front: {levels}. {names[buyer]} buys the "
+        uneven = bool(aff.plan.monthly)
+        each = (lambda amounts, unit: ", ".join(f"{names[r]} {money(amounts[r])}{unit}" for r in ids)
+                if uneven else f"{money(amounts[ids[0]])}{unit} each")
+        if months == 1 and not uneven:
+            draft = (f"Everyone can cover {each(monthly, '')} up front: {levels}. {names[buyer]} buys the "
                      f"{money(price)} {item} from {merchant} and {payers} pay {names[buyer]} back now.")
+        elif months == 1:
+            draft = (f"Everyone can cover their part up front{why}: {each(monthly, '')}; {levels}. "
+                     f"{names[buyer]} buys the {money(price)} {item} from {merchant} and {payers} pay "
+                     f"{names[buyer]} back now.")
         else:
-            draft = (f"Up front ({money(upfront)} each) doesn't work for everyone. Over {months} months it's "
-                     f"{money(per)}/mo each: {levels}. {names[buyer]} buys the {money(price)} {item} from "
+            draft = (f"Up front ({each(owed, '')}) doesn't work for everyone. Over {months} months{why} it's "
+                     f"{each(monthly, '/mo')}: {levels}. {names[buyer]} buys the {money(price)} {item} from "
                      f"{merchant} now and {payers} pay {names[buyer]} monthly.")
         draft += " Reply yes to approve."
-        allowed = {price, upfront, per, last, float(months)}
+        allowed = {price, float(months)} | set(owed.values()) | set(monthly.values()) | set(last.values())
+        if rule and rule.split:
+            allowed |= {round(f * 100, 2) for f in rule.split.values()}
         return [self._say("couch", draft, allowed)]
 
     # ----- protocol -----
@@ -317,6 +344,12 @@ class HouseAgent:
                 raise ValueError(f"unknown bill {bill!r}; use one of {sorted(BILL_EVENTS)}")
             return bill
 
+        def rule_bill_of(args: dict) -> str:
+            bill = str(args.get("bill", "")).lower()
+            if bill not in BILL_FLOW:
+                raise ValueError(f"unknown bill {bill!r}; use one of {RULE_BILLS}")
+            return bill
+
         def price_of(args: dict) -> float:
             price = args.get("price")
             if not isinstance(price, (int, float)) or isinstance(price, bool) or price <= 0:
@@ -353,8 +386,11 @@ class HouseAgent:
             owes = [{"from": names[leg.from_], "to": names[leg.to], "amount": leg.amount, "due": leg.date}
                     for pr in store.proposals() if pr.status in ("approved", "executed")
                     for leg in pr.legs if leg.status == "pending" and leg.to in names]
+            buy = store.house_rule("purchase")
+            purchase_rule = ({"split": {names[r]: f"{f:.0%}" for r, f in buy.split.items()},
+                              "reason": buy.source_text, "rest": "split evenly"} if buy else "split evenly")
             return ToolOutput({"today": today, "roommates": list(names.values()), "bills": bills,
-                               "proposals": proposals, "owes": owes})
+                               "shared_purchases": purchase_rule, "proposals": proposals, "owes": owes})
 
         def split_bill(args: dict) -> ToolOutput:
             bill = bill_of(args)
@@ -365,13 +401,25 @@ class HouseAgent:
         def what_if_purchase(args: dict) -> ToolOutput:
             price, months = price_of(args), months_of(args) or 1
             item = str(args.get("item") or "item")
-            per = round(price / len(names) / months, 2)
+            one_off = shares_of(args) if args.get("shares") else None
+            rule = (HouseRule(id="one-off", bill_type="purchase", split=one_off, source_text="one-off")
+                    if one_off is not None else None)
+            owed = tools.split_bill("purchase", price, rule=rule).shares
             today = store.today()
-            levels = {names[r]: self._ask_personal(r, per, today, item).level for r in names}
-            return ToolOutput({"item": item, "price": price, "months": months, "per_person_monthly": per,
-                               "answers": levels,
-                               "note": "what-if only: nothing proposed. Ask if they want it proposed; "
-                                       "don't tell anyone to reply yes."})
+            options = [months] if args.get("months") is not None else [1, 3]
+            plans = []
+            for m in options:  # same order as group_affordability: up front first, then spread out
+                per = {r: round(a / m, 2) for r, a in owed.items()}
+                plans.append({"months": m, "works_for_everyone": True, "per_person": [
+                    {"name": names[r], "pays_total": owed[r], "pays_per_month": per[r],
+                     "answer": self._ask_personal(r, per[r], today, item).level} for r in names]})
+                plans[-1]["works_for_everyone"] = all(x["answer"] != "no" for x in plans[-1]["per_person"])
+            return ToolOutput({"item": item, "price": price,
+                               "split": "one-off" if one_off is not None else
+                                        ("purchase house rule" if store.house_rule("purchase") else "even"),
+                               "plans": plans,
+                               "note": "what-if only: nothing proposed. Quote each person's own numbers "
+                                       "from per_person; don't tell anyone to reply yes."})
 
         def can_cover(args: dict) -> ToolOutput:
             rid = rid_of(args.get("roommate"))
@@ -406,11 +454,16 @@ class HouseAgent:
                 raise ValueError(f"there's already a {bill} rule vote open; wait for it to finish")
 
         def rule_vote(bill: str, rule: HouseRule, title: str, lead: str) -> ToolOutput:
-            amount = store.bill(bill).amount
+            if bill == "purchase":  # no bill behind it: preview on the price they named, else an example
+                named = parse_purchase(text)[0]
+                amount = named if named and _typed(named, self._context()) else RULE_EXAMPLE
+                what = f"a {money(amount)} shared purchase"
+            else:
+                amount, what = store.bill(bill).amount, bill
             preview = tools.split_bill(bill, amount, rule=rule).shares
             p = self._create("rule", title, [], list(names), rule)
             split = ", ".join(f"{names[r]} {money(a)}" for r, a in preview.items())
-            draft = f"{lead} {bill} would be {split}. Everyone reply yes to make it the house rule."
+            draft = f"{lead} {what} would be {split}. Everyone reply yes to make it the house rule."
             flow = BILL_FLOW[bill]
             if any(pr.flow == flow and pr.status == "pending" for pr in store.proposals()):
                 draft += f" The {bill} proposal already out keeps its current split."
@@ -418,7 +471,7 @@ class HouseAgent:
             return ToolOutput({"proposal": p.id}, [self._say("rule", draft, allowed)])
 
         def propose_rule(args: dict) -> ToolOutput:
-            bill = bill_of(args)
+            bill = rule_bill_of(args)
             vote_open(bill)
             split = shares_of(args)
             reason = str(args.get("reason") or "").strip()[:120] or "the house agreed"
@@ -429,10 +482,10 @@ class HouseAgent:
             rest = [r for r in names if r not in split]
             even = (1 - sum(split.values())) / len(rest) if rest else 0.0
             pcts = ", ".join(f"{names[r]} {split.get(r, even) * 100:g}%" for r in names)
-            return rule_vote(bill, rule, f"House rule: {bill} split {pcts}", f"With {reason},")
+            return rule_vote(bill, rule, f"House rule: {bill} split {pcts}", f"Since {reason},")
 
         def remove_rule(args: dict) -> ToolOutput:
-            bill = bill_of(args)
+            bill = rule_bill_of(args)
             vote_open(bill)
             current = store.house_rule(bill)
             if current is None:
@@ -448,13 +501,23 @@ class HouseAgent:
             price = args.get("price")
             price = float(price) if isinstance(price, (int, float)) and not isinstance(price, bool) else None
             item = args.get("item") if isinstance(args.get("item"), str) else None
-            return ToolOutput({"proposed": True},
-                              self._afford(text, price, item, months_of(args), self._context()))
+            one_off = shares_of(args) if args.get("shares") else None
+            reason = str(args.get("reason") or "").strip()[:120] or None
+            return ToolOutput({"proposed": True}, self._afford(text, price, item, months_of(args),
+                                                               self._context(), one_off, reason))
 
         bill_param = {"bill": {"type": "string", "enum": sorted(BILL_EVENTS)}}
+        rule_param = {"bill": {"type": "string", "enum": RULE_BILLS,
+                               "description": "purchase = the default split for shared buys"}}
+        shares_param = {"type": "object", "additionalProperties": {"type": "number"},
+                        "description": "Roommate name -> percent, e.g. {\"Alex\": 40, \"Sam\": 30, \"Jordan\": 30}."}
         price_params = {"item": {"type": "string", "description": "What they want, singular, e.g. couch."},
                         "price": {"type": "number", "description": "Total USD, as a roommate stated it."},
-                        "months": {"type": "integer", "description": "Spread the cost over this many months."}}
+                        "months": {"type": "integer", "description": "Spread the cost over this many months."},
+                        "shares": shares_param | {"description": "Only for an uneven split of THIS purchase "
+                                                  "(e.g. Alex pays 50% since it's in Alex's room). Omit to use "
+                                                  "the house purchase rule or an even split."},
+                        "reason": {"type": "string", "description": "Why the split is uneven, in their words."}}
         return [
             AgentTool("house_status", "Shared house facts: today, bills (amount, due, payer, house rule), "
                       "proposals with who approved / is still pending, and who owes whom.", {}, house_status),
@@ -471,14 +534,12 @@ class HouseAgent:
                        "purpose": {"type": "string"}}, can_cover, ("roommate", "amount")),
             AgentTool("propose_rule", "ACTION: put a house rule to a vote: how a bill is split and why. "
                       "Unlisted roommates split the rest evenly. Posts a preview of the dollar split.",
-                      bill_param | {"shares": {"type": "object", "description": "Roommate name -> percent, "
-                                               "e.g. {\"Alex\": 40, \"Sam\": 30, \"Jordan\": 30}.",
-                                               "additionalProperties": {"type": "number"}},
+                      rule_param | {"shares": shares_param,
                                     "reason": {"type": "string", "description": "Why, in their words, e.g. "
                                                "Alex has the master bedroom."}},
                       propose_rule, ("bill", "shares")),
             AgentTool("remove_rule", "ACTION: put going back to an even split of a bill to a vote.",
-                      bill_param, remove_rule, ("bill",)),
+                      rule_param, remove_rule, ("bill",)),
             AgentTool("start_bill", "ACTION: split the bill, ask personal agents, and post the payment "
                       "proposal (with any payday fronting) for approval.", bill_param, start_bill, ("bill",)),
             AgentTool("group_affordability", "ACTION: propose buying something together. Picks the plan "
