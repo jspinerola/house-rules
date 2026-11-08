@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+
 import pytest
 
 from app import registry
@@ -9,11 +11,20 @@ ALL_STUB = {env: "stub" for env in registry.ENV.values()}
 ALL_REAL = {**{env: "real" for env in registry.ENV.values()},
             "NESSIE_MODE": "stub", "LLM_MODE": "stub", "OUTBOX_MODE": "stub"}
 
+# CI runs the suite once per profile; per-test `use(...)` still overrides the baseline.
+PROFILES = {"stub": ALL_STUB, "real": ALL_REAL}
+_profile_name = os.environ.get("TEST_PROFILE", "stub").strip().lower() or "stub"
+if _profile_name not in PROFILES:
+    raise ValueError(f"TEST_PROFILE={_profile_name!r}; expected one of {sorted(PROFILES)}")
+BASELINE = PROFILES[_profile_name]
+
 
 @pytest.fixture(autouse=True)
 def _isolated(monkeypatch, tmp_path):
     for env in registry.ENV.values():
         monkeypatch.delenv(env, raising=False)
+    for env, m in BASELINE.items():
+        monkeypatch.setenv(env, m)
     for rid in ("ALEX", "SAM", "JORDAN"):
         monkeypatch.delenv(f"{rid}_HANDLE", raising=False)
     monkeypatch.setenv("SQLITE_PATH", str(tmp_path / "house.db"))
