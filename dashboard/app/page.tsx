@@ -1,110 +1,68 @@
 "use client";
-// House view (P0, unstyled): polls GET /state every 2 s. Styling lands in D6.
-import { useEffect, useState } from "react";
+// House view for the projector: polls GET /state every 2 s. Press "d" for presenter controls.
+import { useCallback, useMemo } from "react";
 import type { HouseState } from "../../contracts/types";
-
-const BRAIN_URL = process.env.NEXT_PUBLIC_BRAIN_URL ?? "http://localhost:8000";
-
-async function post(path: string, body?: unknown) {
-  await fetch(`${BRAIN_URL}${path}`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-}
+import { HouseThread } from "./components/HouseThread";
+import { PresenterBar } from "./components/PresenterBar";
+import { Proposals } from "./components/Proposals";
+import { Roommates } from "./components/Roommates";
+import { Trace } from "./components/Trace";
+import { BRAIN_URL, threadFromTrace, usePoll } from "./lib/brain";
 
 export default function Page() {
-  const [state, setState] = useState<HouseState | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { data: state, error } = usePoll<HouseState>("/state", 2000);
 
-  useEffect(() => {
-    let alive = true;
-    const load = async () => {
-      try {
-        const res = await fetch(`${BRAIN_URL}/state`, { cache: "no-store" });
-        if (!res.ok) throw new Error(`GET /state -> ${res.status}`);
-        const data = (await res.json()) as HouseState;
-        if (alive) setState(data), setError(null);
-      } catch (e) {
-        if (alive) setError((e as Error).message);
-      }
-    };
-    load();
-    const id = setInterval(load, 2000);
-    return () => {
-      alive = false;
-      clearInterval(id);
-    };
-  }, []);
+  const names = useMemo(() => new Map(state?.roommates.map((r) => [r.id, r.name]) ?? []), [state]);
+  const name = useCallback((id: string) => names.get(id) ?? id, [names]);
+  const thread = useMemo(() => threadFromTrace(state?.trace ?? []), [state]);
 
-  if (!state) return <p>{error ?? "loading /state ..."}</p>;
   return (
-    <main>
-      <h1>House Rules - {state.today}</h1>
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-        <section>
-          <h2>Roommates</h2>
-          <ul>
-            {state.roommates.map((r) => (
-              <li key={r.id}>
-                {r.name}: ${r.balance.toFixed(2)} [{r.status}] next payday {r.next_payday}
-              </li>
-            ))}
-          </ul>
-          <h3>Who owes whom</h3>
-          <ul>
-            {state.owes.map((o, i) => (
-              <li key={i}>
-                {o.from} owes {o.to} ${o.amount.toFixed(2)} by {o.due}
-              </li>
-            ))}
-          </ul>
-        </section>
-        <section>
-          <h2>Proposals</h2>
-          {state.proposals.map((p) => (
-            <div key={p.id}>
-              <strong>{p.title}</strong> ({p.status})
-              <div>
-                {p.required_approvers.map((r) => (
-                  <span key={r}>
-                    {r} {p.approvals[r] === "yes" ? "[x]" : p.approvals[r] === "no" ? "[no]" : "[ ]"}{" "}
-                  </span>
-                ))}
-              </div>
-              <ul>
-                {p.legs.map((l, i) => (
-                  <li key={i}>
-                    {l.date} {l.type} {l.from} -&gt; {l.to ?? l.payee} ${l.amount.toFixed(2)} [{l.status}]
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </section>
-        <section>
-          <h2>Agent trace</h2>
-          <ol>
-            {state.trace.map((e, i) => (
-              <li key={i}>
-                [{e.agent}] {e.event}: {e.detail}
-              </li>
-            ))}
-          </ol>
-        </section>
-      </div>
-      <details>
-        <summary>presenter</summary>
-        <button onClick={() => post("/demo/reset")}>reset</button>{" "}
-        <button onClick={() => post("/demo/trigger", { event: "rent_due" })}>trigger rent</button>{" "}
-        <button onClick={() => post("/demo/advance", { to: "2026-12-16" })}>advance to 12-16</button>
-      </details>
-      <details>
-        <summary>raw /state</summary>
-        <pre>{JSON.stringify(state, null, 2)}</pre>
-      </details>
-      <footer>Synthetic data only. Not financial advice.</footer>
+    <main className="mx-auto flex min-h-screen max-w-[1920px] flex-col gap-5 px-4 py-5 sm:px-8 lg:h-screen">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="font-mono text-sm uppercase tracking-[0.35em] text-house">house view</div>
+          <h1 className="text-5xl font-extrabold tracking-tight sm:text-6xl">
+            House Rules<span className="text-house">.</span>
+          </h1>
+        </div>
+        <div className="flex items-end gap-6">
+          <div className="text-right">
+            <div className="font-mono text-sm uppercase tracking-[0.3em] text-fog">demo clock</div>
+            <div className="font-mono text-4xl font-bold tabular-nums sm:text-5xl">{state?.today ?? "----------"}</div>
+          </div>
+          <span
+            title={error ?? "live"}
+            className={`mb-2 flex items-center gap-2 rounded-full px-3 py-1 font-mono text-sm ring-1 ${
+              error ? "bg-no/15 text-no ring-no/50" : "bg-ok/10 text-ok ring-ok/40"
+            }`}
+          >
+            <span className={`h-2.5 w-2.5 rounded-full ${error ? "bg-no" : "animate-pulse bg-ok"}`} />
+            {error ? "stale" : "live"}
+          </span>
+        </div>
+      </header>
+
+      {error && (
+        <p className="rounded-xl border border-no/50 bg-no/10 px-4 py-2 font-mono text-base text-no">
+          {error} ({BRAIN_URL})
+        </p>
+      )}
+
+      {!state ? (
+        <p className="m-auto font-mono text-2xl text-fog">{error ? "brain unreachable" : "loading /state …"}</p>
+      ) : (
+        <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 lg:grid-cols-3">
+          <Roommates state={state} name={name} />
+          <Proposals proposals={state.proposals} today={state.today} name={name} />
+          <div className="grid min-h-0 gap-5 lg:grid-rows-[3fr_2fr]">
+            <Trace trace={state.trace} />
+            <HouseThread lines={thread} />
+          </div>
+        </div>
+      )}
+
+      <footer className="text-center font-mono text-xs text-fog">Synthetic data only. Not financial advice.</footer>
+      <PresenterBar />
     </main>
   );
 }
