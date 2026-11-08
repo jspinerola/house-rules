@@ -133,12 +133,20 @@ export class Gateway {
 
   async deliver(reply: Reply): Promise<void> {
     if (reply.target.type === "group" && this.shouldFanoutGroup()) {
+      // One phone failing (e.g. not allowed by the provider) must not block the others.
+      const failed: string[] = [];
       for (const rid of ROOMMATES) {
-        await this.deliverImpl({
-          target: { type: "dm", roommate_id: rid },
-          text: HOUSE_PREFIX + reply.text,
-        });
+        try {
+          await this.deliverImpl({
+            target: { type: "dm", roommate_id: rid },
+            text: HOUSE_PREFIX + reply.text,
+          });
+        } catch (e) {
+          failed.push(rid);
+          console.error(`house relay to ${rid} failed: ${(e as Error).message}`);
+        }
       }
+      if (failed.length === ROOMMATES.length) throw new Error("house relay failed for every roommate");
       return;
     }
     if (this.sendToSpace) {

@@ -114,7 +114,19 @@ export function createPhotonGateway<S extends SpaceLike>(deps: PhotonDeps<S>, op
       message_id: message.id,
       ts: message.timestamp.toISOString(),
     };
-    await space.responding(() => gateway.handleInbound(chatIn));
+    // Typing is best effort: some recipients (SMS / no iMessage) reject it.
+    let started = false;
+    const work = async () => {
+      started = true;
+      await gateway.handleInbound(chatIn);
+    };
+    try {
+      await space.responding(work);
+    } catch (e) {
+      if (started) throw e;
+      console.warn(`typing unavailable for ${rid} (${(e as Error).message}); replying without it`);
+      await work();
+    }
   }
 
   async function serve(): Promise<void> {
