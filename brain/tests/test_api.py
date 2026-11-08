@@ -132,6 +132,34 @@ def test_reset_restores_seed_quickly(client):  # N9
         assert client.get(f"/bank/{rid}").json()["balance"] == bal
 
 
+def test_failed_reset_keeps_previous_state(client, monkeypatch):
+    """If Nessie can't be seeded, /demo/reset is a 502 and nothing is half-reset."""
+    from contracts.interfaces import NessieError
+    approve_rent(client)
+    client.post("/demo/advance", json={"to": "2026-12-02"})
+    before_state = client.get("/state").json()
+    before_bank = {rid: client.get(f"/bank/{rid}").json() for rid in SEED}
+
+    nessie_cls = type(registry.get("nessie"))
+    real_seed = nessie_cls.seed
+
+    def down(self, scenario):
+        raise NessieError("Nessie POST /customers network error")
+    monkeypatch.setattr(nessie_cls, "seed", down)
+    assert_error(client.post("/demo/reset"), 502, "NessieError")
+
+    after = client.get("/state").json()
+    assert (after["today"], after["proposals"], after["owes"]) == (
+        before_state["today"], before_state["proposals"], before_state["owes"])
+    for rid in SEED:
+        r = client.get(f"/bank/{rid}")
+        assert r.status_code == 200 and r.json() == before_bank[rid]
+
+    monkeypatch.setattr(nessie_cls, "seed", real_seed)  # Nessie back up: reset works again
+    assert client.post("/demo/reset").json() == {"ok": True}
+    assert client.get("/state").json()["today"] == "2026-11-28"
+
+
 def test_advance_credits_crossed_paydays(client):
     r = client.post("/demo/advance", json={"to": "2026-12-16"})
     assert r.status_code == 200 and r.json()["executed"] == []

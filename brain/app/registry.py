@@ -84,3 +84,14 @@ def get(name: str) -> Any:
 def reset() -> None:
     """Drop every cached instance (modes are re-read on the next get)."""
     _cache.clear()
+
+
+def snapshot() -> dict[tuple[str, str], Any]:
+    """Current instances, so a caller can put them back if rebuilding fails."""
+    return dict(_cache)
+
+
+def restore(snap: dict[tuple[str, str], Any]) -> None:
+    """Replace the cache with a snapshot taken earlier."""
+    _cache.clear()
+    _cache.update(snap)
