@@ -16,6 +16,29 @@ from ..fmt import money
 from .voice import speak
 
 BILL_FLOWS = {"rent_due": ("rent", "rent"), "electric_bill": ("electric", "utility")}
+BILL_EVENTS = {"rent": "rent_due", "electric": "electric_bill"}
+
+# Grok picks the flow; code does every number (AGENTS.md: code does the math, the LLM explains).
+ROUTER = """ROLE:ROUTER. You route roommate messages in the House Rules group chat to a tool.
+- start_bill: someone says a shared bill (rent or electric) is due, coming up, or should be split/paid.
+- group_affordability: someone asks whether the house can afford or split a purchase.
+- small_talk: greetings, thanks, jokes, or anything that is not clearly about a bill or a purchase.
+Only start a bill when the message is actually about that bill. Always call exactly one tool."""
+ROUTER_TOOLS = [
+    {"type": "function", "function": {
+        "name": "start_bill",
+        "description": "Start the bill flow: split it by house rules, ask each personal agent, propose payments.",
+        "parameters": {"type": "object", "properties": {"bill": {"type": "string", "enum": ["rent", "electric"]}},
+                       "required": ["bill"]}}},
+    {"type": "function", "function": {
+        "name": "group_affordability",
+        "description": "Check whether everyone can cover a shared purchase and propose a plan.",
+        "parameters": {"type": "object", "properties": {}}}},
+    {"type": "function", "function": {
+        "name": "small_talk",
+        "description": "Not about a bill or purchase: reply with a short intro.",
+        "parameters": {"type": "object", "properties": {}}}},
+]
 PRICE = re.compile(r"\$\s*([\d,]+(?:\.\d{1,2})?)")
 ITEM = re.compile(r"\$\s*[\d,]+(?:\.\d{1,2})?\s+([a-z][a-z ]*?)\s*(?:\?|$|for\b|from\b)")
 
@@ -156,9 +179,36 @@ class HouseAgent:
         trace.log("watcher", "skipped", f"{event} is P1 (B8) and not built yet")
         return []
 
+    def _route(self, text: str) -> tuple[str, dict]:
+        """Ask the LLM which tool fits; fall back to keywords when it picks none (stub mode, Grok down)."""
+        result = registry.get("llm").chat(
+            [{"role": "system", "content": ROUTER}, {"role": "user", "content": text}], ROUTER_TOOLS)
+        for call in result.tool_calls:
+            if call.name == "start_bill" and call.args.get("bill") in BILL_EVENTS:
+                return "start_bill", {"bill": call.args["bill"]}
+            if call.name == "group_affordability":
+                return "group_affordability", {}
+            if call.name == "small_talk":
+                return "", {}
+        low = text.lower()
+        if "afford" in low:
+            return "group_affordability", {}
+        for bill in BILL_EVENTS:
+            if bill in low:
+                return "start_bill", {"bill": bill}
+        return "", {}
+
     def on_message(self, sender_rid: str, text: str) -> list[Reply]:
-        if "afford" in text.lower():
+        tool, args = self._route(text)
+        trace.log("house", "routed", f"{sender_rid}: {tool or 'chat'}")
+        if tool == "group_affordability":
             return self._afford(text)
+        if tool == "start_bill":
+            bill_type, flow = BILL_FLOWS[BILL_EVENTS[args["bill"]]]
+            if any(p.flow == flow and p.status == "pending" for p in registry.get("store").proposals()):
+                return [_group(speak("house", "chat", f"The {bill_type} proposal is already out. "
+                                     "Reply yes in your DM to approve it.", set(), "group"))]
+            return self._bill_flow(bill_type, flow)
         return [_group(speak("house", "chat", "I'm the house agent. I split bills by your house rules, time "
                              "payments to paydays, and answer things like \"can we afford a $1,200 couch?\"",
                              {1200}, "group"))]

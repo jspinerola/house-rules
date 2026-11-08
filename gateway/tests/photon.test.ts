@@ -200,3 +200,62 @@ test("POST /send pushes a group message to registered DMs", async () => {
   assert.deepEqual(health.dms_registered, ["alex", "jordan", "sam"]);
   for (const r of Object.keys(PHONES) as Rid[]) assert.deepEqual(d[r].sent, [`${HOUSE_PREFIX}Rent executed.`]);
 });
+
+test("#house in a DM goes to the house agent and the reply reaches all 3 phones", async () => {
+  const d = dms();
+  respond = (b) => {
+    const { chat_type, text } = b as { chat_type: string; text: string };
+    return chat_type === "group" && text === "rent's due soon"
+      ? { replies: [{ target: { type: "group" }, text: "Rent is $800 each." }] }
+      : { replies: [] };
+  };
+  const { serve } = setup([
+    [d.alex, msg(PHONES.alex, "hi")],
+    [d.sam, msg(PHONES.sam, "hi")],
+    [d.jordan, msg(PHONES.jordan, "hi")],
+    [d.alex, msg(PHONES.alex, "#House: rent's due soon")],
+  ]);
+  await serve();
+  const last = brain.calls.at(-1) as { chat_type: string; text: string };
+  assert.deepEqual([last.chat_type, last.text], ["group", "rent's due soon"]);
+  for (const r of Object.keys(PHONES) as Rid[]) assert.deepEqual(d[r].sent, [`${HOUSE_PREFIX}Rent is $800 each.`]);
+});
+
+test("plain DM text still goes to the personal agent", async () => {
+  const s = new FakeSpace("dm-alex");
+  const { serve } = setup([[s, msg(PHONES.alex, "my household budget?")]]);
+  await serve();
+  assert.equal((brain.calls[0] as { chat_type: string }).chat_type, "dm");
+});
+
+test("one phone failing does not block the house relay to the others", async () => {
+  const d = dms();
+  d.sam.send = async () => {
+    throw new Error("Target not allowed for this project");
+  };
+  respond = (b) =>
+    (b as { text: string }).text === "go"
+      ? { replies: [{ target: { type: "group" }, text: "Rent is due." }] }
+      : { replies: [] };
+  const { serve } = setup([
+    [d.alex, msg(PHONES.alex, "hi")],
+    [d.sam, msg(PHONES.sam, "hi")],
+    [d.jordan, msg(PHONES.jordan, "hi")],
+    [d.alex, msg(PHONES.alex, "#house go")],
+  ]);
+  await serve();
+  assert.deepEqual(d.alex.sent, [`${HOUSE_PREFIX}Rent is due.`]);
+  assert.deepEqual(d.jordan.sent, [`${HOUSE_PREFIX}Rent is due.`]);
+});
+
+test("message still reaches the brain when typing is unavailable", async () => {
+  const s = new FakeSpace("dm-jordan");
+  s.responding = async () => {
+    throw new Error("Typing requires iMessage");
+  };
+  respond = () => ({ replies: [{ target: { type: "dm", roommate_id: "jordan" }, text: "hey jordan" }] });
+  const { serve } = setup([[s, msg(PHONES.jordan, "hi")]]);
+  await serve();
+  assert.equal(brain.calls.length, 1);
+  assert.deepEqual(s.sent, ["hey jordan"]);
+});
