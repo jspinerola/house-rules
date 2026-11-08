@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { useEffect, useRef, useState } from 'react';
 import type { BankView } from '../../contracts/types';
@@ -11,6 +12,8 @@ const TIMEOUT_MS = 4000;
 export function brainBase(): string {
   const direct: unknown = Constants.expoConfig?.extra?.directBrainUrl;
   if (typeof direct === 'string' && direct) return direct.replace(/\/$/, '');
+  // Web build: the page is served by the same Metro dev server, so /brain is same-origin.
+  if (Platform.OS === 'web' && typeof window !== 'undefined') return `${window.location.origin}/brain`;
   const hostUri = Constants.expoConfig?.hostUri;
   if (!hostUri) return 'http://localhost:8000';
   const host = hostUri.split('/')[0];
