@@ -30,7 +30,13 @@ def _customer(rid: str) -> dict:
 
 class Indicators:
     def compute(self, rid: str) -> dict[str, Indicator]:
+        """Deterministic health metrics for one roommate. Never calls an LLM.
+
+        Uses only that roommate's store history + Nessie balance, plus shared
+        house facts (rent bill / clock). Unknown rid raises KeyError via Store.
+        """
         store, tools = registry.get("store"), registry.get("tools")
+        store.get_roommate(rid)  # fail closed on unknown / injection-style ids
         today = store.today()
         profile = build_profile(_customer(rid))
         metrics = compute_metrics(profile)
@@ -39,14 +45,20 @@ class Indicators:
             status = metrics["status"][key]
             if value is None or status == "unknown":
                 raise ValueError(f"indicator {key} for {rid} is missing input data")
-            out[key] = Indicator(value=value, status=status, inputs={})
+            out[key] = Indicator(value=float(value), status=status, inputs={})
 
-        balance = registry.get("nessie").balance(rid)
-        spend = profile["avg_monthly_spending"]
-        runway = round(balance / (spend / 30), 1) if spend else float("inf")
-        share = tools.split_bill("rent", store.bill("rent").amount).shares[rid]
-        income = profile["monthly_income"]
+        balance = float(registry.get("nessie").balance(rid))
+        spend = float(profile["avg_monthly_spending"])
+        if not spend:
+            raise ValueError(f"indicator runway_days for {rid} needs spending history")
+        runway = round(balance / (spend / 30), 1)
+        share = float(tools.split_bill("rent", store.bill("rent").amount).shares[rid])
+        income = float(profile["monthly_income"])
+        if not income:
+            raise ValueError(f"indicator rent_to_income for {rid} needs monthly_income")
         payday = tools.next_payday(rid, today)
+        if not payday:
+            raise ValueError(f"no next payday for {rid!r} after {today}")
         days = float((date.fromisoformat(payday) - date.fromisoformat(today)).days)
         buffer = round(balance - share, 2)
         days_status: IndicatorStatus = "good" if runway >= days + 7 else "watch" if runway >= days else "risk"

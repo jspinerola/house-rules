@@ -6,11 +6,21 @@ confirmation through the Outbox (after the Auditor checks it).
 """
 from __future__ import annotations
 
+import math
+
 from contracts.interfaces import NessieError
 from contracts.models import GroupTarget, Leg, Proposal, Reply
 
 from . import registry, trace
 from .fmt import money
+
+
+def _valid_amount(amount: float) -> float:
+    if not isinstance(amount, (int, float)) or isinstance(amount, bool) or not math.isfinite(amount):
+        raise ValueError("leg amount must be a finite number")
+    if amount <= 0:
+        raise ValueError("leg amount must be > 0")
+    return float(amount)
 
 
 class Treasurer:
@@ -22,16 +32,17 @@ class Treasurer:
         return f"{names[leg.from_]} to {dest} {money(leg.amount)}"
 
     def _run_leg(self, leg: Leg, title: str) -> str:
+        amount = _valid_amount(leg.amount)
         nessie = registry.get("nessie")
         if leg.type in ("transfer", "scheduled_transfer"):
             if leg.to is None:
                 raise ValueError(f"{leg.type} leg needs a `to` roommate")
-            return nessie.transfer(leg.from_, leg.to, leg.amount, title)
+            return nessie.transfer(leg.from_, leg.to, amount, title)
         if leg.payee is None:
             raise ValueError(f"{leg.type} leg needs a payee")
         if leg.type == "bill_payment":
-            return nessie.pay_bill(leg.from_, leg.payee, leg.amount, leg.date)
-        return nessie.purchase(leg.from_, leg.payee, leg.amount, title)
+            return nessie.pay_bill(leg.from_, leg.payee, amount, leg.date)
+        return nessie.purchase(leg.from_, leg.payee, amount, title)
 
     def _run_due_legs(self, p: Proposal, today: str) -> tuple[list[Leg], str | None]:
         """Run p's due legs in order; stop at the first Nessie failure."""
@@ -49,6 +60,7 @@ class Treasurer:
         return ran, None
 
     def _announce(self, text: str, amounts: set[float]) -> None:
+        # Only leg amounts are allowed in group text — never balances/incomes.
         audit = registry.get("auditor").check(text, amounts, "group")
         if not audit.ok:
             text = "The treasurer finished a payment. Details are in the house view."
@@ -78,10 +90,16 @@ class Treasurer:
 
     def execute(self, pid: str) -> list[Leg]:
         store = registry.get("store")
-        p = store.get_proposal(pid)
+        p = store.get_proposal(pid)  # KeyError on unknown pid
         if p.status != "approved":
-            raise ValueError(f"proposal {pid} is {p.status}; the treasurer only runs approved proposals")
-        ran, error = self._run_due_legs(p, store.today())
+            raise ValueError(
+                f"proposal {pid} is {p.status}; the treasurer only runs approved proposals")
+        # Validate all due amounts before any Nessie write (fail closed).
+        today = store.today()
+        for leg in p.legs:
+            if leg.status == "pending" and leg.date <= today:
+                _valid_amount(leg.amount)
+        ran, error = self._run_due_legs(p, today)
         if not error:
             p.status = "executed"
         self._settle(p, ran, error, f"Sent for {p.title}")
@@ -91,9 +109,13 @@ class Treasurer:
         store = registry.get("store")
         ran_all: list[Leg] = []
         for p in store.proposals():
+            # Only executed proposals with remaining pending legs; never retry failed.
             if p.status != "executed" or not any(
                     leg.status == "pending" and leg.date <= today for leg in p.legs):
                 continue
+            for leg in p.legs:
+                if leg.status == "pending" and leg.date <= today:
+                    _valid_amount(leg.amount)
             ran, error = self._run_due_legs(p, today)
             self._settle(p, ran, error, "Scheduled payment sent")
             ran_all += ran

@@ -119,6 +119,25 @@ Every module is reached through `brain/app/registry.py` and picks its implementa
 
 `pytest` runs the e2e test twice: all stubs, and all real modules except Nessie, LLM and Outbox.
 
+### Integration checkpoints (I1 / I4)
+
+Flag flips from REQUIREMENTS.md. Report failures; do not patch other modules' code in a checkpoint run—flip the failing module back to `stub` on `main` and keep going.
+
+| Checkpoint | Flags real | Proves |
+| --- | --- | --- |
+| **I1** (owned) | `DB_MODE=sqlite`, `INDICATORS_MODE=real`, `TOOLS_MODE=real` (all others stub) | Real numbers match `expected.json` |
+| **I4** (partner) | I3 stack via `ALL_REAL` + `NESSIE_MODE=live` | Money moves in Nessie |
+
+```bash
+# I1 — default CI-safe (no live network)
+./scripts/run_checkpoint.sh I1
+
+# I4 — opt-in live Nessie (needs NESSIE_API_KEY in .env; HTTPS base URL)
+NESSIE_LIVE_TEST=1 ./scripts/run_checkpoint.sh I4
+```
+
+The runner prints `CHECKPOINT I1|I4: PASS|FAIL`, a likely `module`, and the exact error. Bank app optional for I4 visual check: poll `/bank/{rid}` after rent execution.
+
 ## Tracks (hackathon context)
 
 - **PNC 360° Financial Health Navigator** — per-roommate indicators + group affordability; code computes, LLM explains.

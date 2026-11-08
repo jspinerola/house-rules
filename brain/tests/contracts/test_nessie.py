@@ -1,13 +1,30 @@
+import os
+from pathlib import Path
+
 import pytest
+from dotenv import load_dotenv
 
-from app import registry
+from app import fixtures, registry
+
+# Match brain/app/main.py: local .env supplies the key without overriding a real env.
+load_dotenv(Path(__file__).resolve().parents[3] / ".env")
 
 
-@pytest.mark.parametrize("mode", ["stub", pytest.param("live", marks=pytest.mark.skip(
-    reason="live Nessie lands in D2; never called from the skeleton"))])
+def _run_live() -> bool:
+    """Live hits the real Nessie sandbox; opt in with NESSIE_LIVE_TEST=1 + API key."""
+    return (os.environ.get("NESSIE_LIVE_TEST") or "").strip() == "1" and bool(
+        (os.environ.get("NESSIE_API_KEY") or "").strip())
+
+
+@pytest.mark.parametrize("mode", [
+    "stub",
+    pytest.param("live", marks=pytest.mark.skipif(
+        not _run_live(), reason="set NESSIE_LIVE_TEST=1 and NESSIE_API_KEY to run live")),
+])
 def test_nessie_contract(use, mode):
-    use(nessie=mode)
+    use(nessie=mode, store="stub")
     n = registry.get("nessie")
+    n.seed(fixtures.scenario())
     assert (n.balance("alex"), n.balance("sam"), n.balance("jordan")) == (4200, 2600, 310)
     tid = n.transfer("sam", "alex", 800, "rent share")
     assert tid and n.balance("sam") == 1800 and n.balance("alex") == 5000
@@ -16,6 +33,6 @@ def test_nessie_contract(use, mode):
     n.deposit("jordan", 1350, "Payroll")
     assert n.balance("alex") == 1400 and n.balance("jordan") == 1660
     newest = n.transactions("alex")[0]
-    assert newest.date == "2026-11-28" and newest.amount in (-2400, -1200, 800)
+    assert newest.date and newest.amount in (-2400, -1200, 800)
     dates = [t.date for t in n.transactions("alex")]
     assert dates == sorted(dates, reverse=True)

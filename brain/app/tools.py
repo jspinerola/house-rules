@@ -7,6 +7,7 @@ Rules (REQUIREMENTS M3):
 """
 from __future__ import annotations
 
+import math
 from datetime import date, timedelta
 
 from contracts.models import Affordability, AffordPlan, CoverAnswer, Level, PaydayPlan, SplitResult
@@ -19,7 +20,18 @@ COMMITTED = ("pending", "approved", "executed")
 
 
 def _d(s: str) -> date:
-    return date.fromisoformat(s)
+    try:
+        return date.fromisoformat(s)
+    except ValueError as e:
+        raise ValueError(f"invalid date {s!r}") from e
+
+
+def _money(amount: float, label: str = "amount") -> float:
+    if not isinstance(amount, (int, float)) or isinstance(amount, bool) or not math.isfinite(amount):
+        raise ValueError(f"{label} must be a finite number")
+    if amount < 0:
+        raise ValueError(f"{label} must be >= 0")
+    return float(amount)
 
 
 def _add_month(d: date, day: int) -> date:
@@ -31,7 +43,7 @@ class Tools:
     # ----- helpers -----
 
     def next_payday(self, rid: str, after: str) -> str | None:
-        pay = registry.get("store").get_roommate(rid).pay
+        pay = registry.get("store").get_roommate(rid).pay  # KeyError on unknown rid
         a = _d(after)
         if pay.schedule == "monthly":
             if pay.day is None:
@@ -54,12 +66,16 @@ class Tools:
     def _projection(self, rid: str, amount: float, by: str) -> tuple[float, str]:
         """Cash left at the next payday after `by`, crediting paydays up to `by`."""
         store = registry.get("store")
-        pay = store.get_roommate(rid).pay
+        pay = store.get_roommate(rid).pay  # KeyError on unknown rid
+        amount = _money(amount)
+        by_s = _d(by).isoformat()
         cash = registry.get("nessie").balance(rid) - amount
         d = self.next_payday(rid, store.today())
-        while d <= by:
+        while d is not None and d <= by_s:
             cash += pay.amount
             d = self.next_payday(rid, d)
+        if d is None:
+            raise ValueError(f"no next payday horizon for {rid!r}")
         return round(cash - self._committed_out(rid, d), 2), d
 
     def buffer_after(self, rid: str, amount: float) -> float:
@@ -68,6 +84,7 @@ class Tools:
     # ----- protocol -----
 
     def split_bill(self, bill_type: str, amount: float) -> SplitResult:
+        amount = _money(amount)
         store = registry.get("store")
         ids = [r.id for r in store.roommates()]
         rule = store.house_rule(bill_type)
@@ -91,17 +108,24 @@ class Tools:
             if cash >= 0:
                 return CoverAnswer(level="no", earliest_date=d)
             d = self.next_payday(rid, d)
+            if d is None:
+                break
         return CoverAnswer(level="no", earliest_date=None)
 
     def payday_plan(self, rid: str, amount: float) -> PaydayPlan:
+        amount = _money(amount)
         store = registry.get("store")
+        store.get_roommate(rid)  # KeyError on unknown rid
         others = [r.id for r in store.roommates() if r.id != rid]
         fronter = max(others, key=lambda o: self.buffer_after(o, amount))
         payday = self.next_payday(rid, store.today())
+        if not payday:
+            raise ValueError(f"no next payday for {rid!r}")
         return PaydayPlan(fronter=fronter, repay_date=(_d(payday) + timedelta(days=1)).isoformat())
 
     def group_affordability(self, item: str, price: float,
                             months_options: tuple[int, ...] = (1, 3)) -> Affordability:
+        price = _money(price, "price")
         store = registry.get("store")
         ids = [r.id for r in store.roommates()]
         today = store.today()

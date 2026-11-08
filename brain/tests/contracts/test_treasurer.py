@@ -69,7 +69,9 @@ def test_real_marks_failed_on_nessie_error(use, monkeypatch):
     assert "failed" in registry.get("outbox").sent[-1].text
 
 
-def test_live_nessie_refuses(use):
+def test_live_nessie_constructs_with_key(use, monkeypatch):
+    """Live mode constructs when a key is present (HTTP not required at init)."""
+    monkeypatch.setenv("NESSIE_API_KEY", "unit-test-key")
     use(nessie="live")
-    with pytest.raises(NotImplementedError):
-        registry.get("nessie")
+    n = registry.get("nessie")
+    assert n.__class__.__name__ == "LiveNessie"
