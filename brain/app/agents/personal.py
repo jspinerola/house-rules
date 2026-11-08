@@ -7,6 +7,7 @@ To the house agent it releases nothing but {level, earliest_date}.
 """
 from __future__ import annotations
 
+import re
 from collections import deque
 
 from contracts.models import Ask, DMTarget, Proposal, Release, Reply
@@ -27,9 +28,13 @@ fronting for others, or anything about their situation), save it with set_prefer
 For "why am I tight / can I afford X" call can_i_cover (it gives the reason, recurring charges and
 cushion) and my_profile, and explain with those specifics. Never count side income as certain.
 A savings goal needs a monthly amount; if they didn't give one, ask instead of guessing.
-If nothing needs a tool, just reply. You can't move money; approvals happen when they reply yes."""
+You can't change house rules or how bills are split: that takes everyone's yes in the group chat.
+If they ask, tell them to say it in the group (e.g. "rent should be 40/30/30 because ..."); never say a
+rule is set. If nothing needs a tool, just reply. You can't move money; approvals happen when they reply yes."""
 MAX_MONEY = 100_000.0
 MAX_NOTES = 10
+# "rent rule", "40/30/30", "split the electric": house rules, which only the group can set.
+HOUSE_RULE_TALK = re.compile(r"\b(?:rule|split)\b|\b\d{1,3}\s*/\s*\d{1,3}\s*/\s*\d{1,3}\b", re.I)
 REASONS = {"cushion": "the cushion they asked you to keep", "savings_goal": "their savings goal",
            "upcoming_bills": "recurring charges due before payday", "runway": "their runway is short"}
 
@@ -129,7 +134,12 @@ class PersonalAgent:
                 note = str(value or "").strip()[:200]
                 if not note:
                     raise ValueError("the note is empty")
-                prefs.notes = (prefs.notes + [note])[-MAX_NOTES:]
+                if HOUSE_RULE_TALK.search(note):
+                    raise ValueError("that's a house rule, not a personal note: house rules need everyone's yes. "
+                                     "Tell them to say it in the group chat, e.g. 'rent should be 40/30/30 "
+                                     "because ...'. Nothing was saved.")
+                if note not in prefs.notes:
+                    prefs.notes = (prefs.notes + [note])[-MAX_NOTES:]
             elif kind == "remove_note":
                 needle = str(value or "").lower()
                 prefs.notes = [n for n in prefs.notes if needle not in n.lower()]
@@ -211,6 +221,27 @@ class PersonalAgent:
         return self._dm(rid, "small_talk", "I'm your personal agent. I only share ok, tight or no with the house. "
                         "Ask me about your runway or balance.", set(), text)
 
+    def _why_short(self, rid: str, share: float, payday: str) -> tuple[str, set[float]]:
+        """Why this roommate can't cover `share` before payday, in their own numbers (DM only)."""
+        store = registry.get("store")
+        balance = round(registry.get("nessie").balance(rid), 2)
+        renewing = [r for r in registry.get("indicators").profile(rid).recurring
+                    if store.today() < r.next_date <= payday]
+        renew = round(sum(r.amount for r in renewing), 2)
+        left = round(balance - share, 2)
+        after = round(left - renew, 2)
+        numbers = {balance, share, abs(left), renew, abs(after)} | {r.amount for r in renewing}
+        if left < 0:
+            return (f"Your {money(balance)} doesn't cover the {money(share)} share before your {payday} payday",
+                    numbers)
+        if renewing:
+            what = " and ".join(r.name for r in renewing)
+            end = (f"so you'd be {money(-after)} short" if after < 0
+                   else f"leaving only {money(after)}")
+            return (f"After your {money(share)} share you'd have {money(left)}, and {what} ({money(renew)}) "
+                    f"renew before your {payday} payday, {end}", numbers)
+        return f"After your {money(share)} share you'd have only {money(left)} until your {payday} payday", numbers
+
     def explain(self, rid: str, proposal: Proposal) -> list[Reply]:
         store, tools = registry.get("store"), registry.get("tools")
         names = {r.id: r.name for r in store.roommates()}
@@ -220,10 +251,10 @@ class PersonalAgent:
             share = tools.split_bill("rent", store.bill("rent").amount).shares[rid]
             payday = tools.next_payday(rid, store.today())
             fronter = names[repay.to]
-            draft = (f"Rent is {money(share)} and your payday is {payday}, so {fronter} fronts your share "
-                     f"now and you auto-repay {fronter} {money(repay.amount)} on {repay.date}. "
-                     f"Reply yes to agree.")
-            return self._dm(rid, "front", draft, {share, repay.amount})
+            why, numbers = self._why_short(rid, share, payday or repay.date)
+            draft = (f"{why}. So {fronter} fronts your share now and you auto-repay {fronter} "
+                     f"{money(repay.amount)} on {repay.date}. Reply yes to agree.")
+            return self._dm(rid, "front", draft, {share, repay.amount} | numbers)
         fronting = next((leg for leg in proposal.legs
                          if leg.to == rid and leg.type == "scheduled_transfer"), None)
         if proposal.flow == "rent" and fronting is not None:

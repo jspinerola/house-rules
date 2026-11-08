@@ -140,12 +140,20 @@ class HouseAgent:
 
     # ----- bills (rent day, utilities) -----
 
+    def _next_due(self, bill_type: str) -> str:
+        """The bill's next unpaid cycle: its seeded due date, one month later per cycle already paid."""
+        store = registry.get("store")
+        flow = BILL_FLOW[bill_type]
+        paid = sum(1 for p in store.proposals() if p.flow == flow and p.status in ("approved", "executed"))
+        return _shift_months(date.fromisoformat(store.bill(bill_type).due), paid).isoformat()
+
     def _bill_flow(self, bill_type: str, flow: str) -> list[Reply]:
         store, tools = registry.get("store"), registry.get("tools")
         names = self._names()
         bill = store.bill(bill_type)
         today = store.today()
-        by = (date.fromisoformat(bill.due) - timedelta(days=1)).isoformat()
+        due = self._next_due(bill_type)
+        by = max(today, (date.fromisoformat(due) - timedelta(days=1)).isoformat())
         shares = tools.split_bill(bill_type, bill.amount).shares
         releases = {rid: self._ask_personal(rid, amt, by, bill_type) for rid, amt in shares.items()}
 
@@ -172,7 +180,7 @@ class HouseAgent:
                              date=plan.repay_date))
             fronted.append((rid, plan.fronter, plan.repay_date))
         pay = Leg(type="bill_payment", **{"from": bill.payer}, payee=bill.payee, amount=bill.amount, date=today)
-        month = date.fromisoformat(bill.due).strftime("%B")
+        month = date.fromisoformat(due).strftime("%B")
         title = f"{bill_type.capitalize()} for {month}"
         p = self._create(flow, title, now + [pay] + later, list(shares))
 
@@ -180,7 +188,7 @@ class HouseAgent:
         each = (f"{money(next(iter(amounts)))} each" if len(amounts) == 1 else
                 ", ".join(f"{names[r]} {money(a)}" for r, a in shares.items()))
         senders = [names[r] for r in shares if r != bill.payer]
-        draft = (f"{title.split(' for ')[0]} for {month} is {money(bill.amount)}, due {bill.due}: {each}. "
+        draft = (f"{title.split(' for ')[0]} for {month} is {money(bill.amount)}, due {due}: {each}. "
                  f"{_join(senders)} send their share to {names[bill.payer]}, then {names[bill.payer]} "
                  f"pays {bill.payee}.")
         for debtor, fronter, repay in fronted:
@@ -373,7 +381,8 @@ class HouseAgent:
                 b = store.bill(bill)
                 rule = store.house_rule(bill)
                 shares = tools.split_bill(bill, b.amount).shares
-                bills.append({"bill": bill, "amount": b.amount, "due": b.due, "payer": names[b.payer],
+                bills.append({"bill": bill, "amount": b.amount, "next_due": self._next_due(bill),
+                              "payer": names[b.payer],
                               "shares": {names[r]: a for r, a in shares.items()},
                               "payee": b.payee,
                               "house_rule": ({"split": {names[r]: f"{f:.0%}" for r, f in rule.split.items()},
