@@ -64,6 +64,8 @@ Specialists are **tools** the house agent calls (`split_bill`, `group_affordabil
 - **Everyone approves** — rent goes out only when all shares are confirmed.
 - **Small amounts** (P1) — under $20 auto-approve after a 1-hour veto window.
 - **Private nudges** — late payer gets a DM, never a public callout.
+- **House rules** — a rule set in chat ("Alex has the master, rent is 40/30/30") is a `rule` proposal; everyone approves; no money moves, so the treasurer is not called.
+- **Personal preferences** — cushion, savings goal, front cap and notes are set by that roommate in their DM, apply immediately, and never leave that DM. Design: `docs/RULES_AND_PROFILES.md`.
 
 Yes parsing: `yes` | `y` | `yep` | `ok` | `approve` | 👍. No: `no` | `n` | `nah` | `cancel`.
 
@@ -160,11 +162,12 @@ type Leg = {
 };
 
 type Proposal = {
-  id: string; flow: "rent" | "front" | "purchase" | "utility";
+  id: string; flow: "rent" | "front" | "purchase" | "utility" | "rule";
   title: string; legs: Leg[];
   required_approvers: string[];
   approvals: Record<string, "pending" | "yes" | "no">;
   status: "pending" | "approved" | "executed" | "rejected" | "failed";
+  rule?: HouseRule;   // flow "rule" only
 };
 
 type HouseState = {
@@ -173,6 +176,7 @@ type HouseState = {
   owes: { from: string; to: string; amount: number; due: string }[];
   proposals: Proposal[];
   trace: TraceEvent[]; // newest first, max 50
+  rules: HouseRule[];
 };
 ```
 
@@ -182,12 +186,14 @@ type HouseState = {
 # indicators.py [A]
 compute(roommate_id) -> dict[str, {"value": float, "status": "good"|"watch"|"risk", "inputs": dict}]
 # + runway_days, rent_to_income, days_to_payday, buffer_after(amount)
+profile(roommate_id) -> Profile   # private: income pattern, recurring charges, preferences, indicators
 
 # tools.py [A] — pure code, no LLM
-split_bill(bill_type, amount) -> {"shares": {roommate_id: float}}
-can_cover(roommate_id, amount, date) -> {"level": "ok"|"tight"|"no", "earliest_date": str|None}
-# ok = balance stays >= $200 until next payday; tight >= 0; no = negative
-payday_plan(roommate_id, amount) -> {"fronter": roommate_id, "repay_date": str}
+split_bill(bill_type, amount, rule=None) -> {"shares": {roommate_id: float}}
+can_cover(roommate_id, amount, date) -> {"level": "ok"|"tight"|"no", "earliest_date": str|None, "reason": str|None}
+# ok = balance (minus recurring charges before payday) stays >= max(200, min_buffer) + savings_monthly;
+# tight >= 0; no = negative; ok -> tight when runway_days is risk. reason is DM-only.
+payday_plan(roommate_id, amount) -> {"fronter": roommate_id, "repay_date": str}   # skips fronters over their front_cap
 group_affordability(item, price, months_options=[1, 3]) -> {"answers": {...}, "plan": {...}}
 
 # nessie.py [D] — live and mock same class
@@ -199,7 +205,11 @@ run_due(today) -> list[Leg]
 
 # proposals.py [B]
 create(...) -> Proposal
-record_reply(roommate_id, text) -> Proposal | None  # all yes -> approved -> treasurer.execute
+record_reply(roommate_id, text) -> Proposal | None  # all yes -> approved -> treasurer.execute (flow "rule": save rule instead)
+
+# store [A] additions
+house_rules() / save_house_rule(rule) / delete_house_rule(bill_type)
+get_preferences(rid) -> Preferences / save_preferences(rid, prefs)
 
 # auditor.py [B]
 check(text, allowed_numbers: set[float], audience: "group"|roommate_id) -> {"ok": bool, "reasons": list[str]}

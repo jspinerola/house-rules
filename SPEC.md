@@ -367,7 +367,7 @@ The demo clock starts on **2026-11-28**. Rent is due **2026-12-01**. All amounts
 | id | Name | Starting checking | Income | Next payday | Notes |
 | --- | --- | --- | --- | --- | --- |
 | `alex` | Alex | $4,200 | $5,800 salary, 1st of month | 2026-12-01 | Lease holder; pays the landlord |
-| `sam` | Sam | $2,600 | $1,900 biweekly | 2026-12-05 | House rule: 40% of electric |
+| `sam` | Sam | $2,600 | $1,900 biweekly | 2026-12-05 | Seeded house rule: 40% of electric (more rules are set in chat) |
 | `jordan` | Jordan | $310 | $1,350 on the 15th, plus gig deposits | 2026-12-15 | Can't cover $800 before payday |
 
 Shared items: landlord **Maple Court Apartments**, rent **$2,400/mo** (bill on Alex's account). Electric bill **$150**, arrives on demand. Couch from **Couch Co.**, **$1,200**. Seed 3 months of synthetic history per roommate (paychecks, groceries, subscriptions) so indicators have something to work with.
@@ -418,13 +418,15 @@ type Leg = {
   nessie_id?: string;
 };
 type Proposal = {
-  id: string;  flow: "rent" | "front" | "purchase" | "utility";
+  id: string;  flow: "rent" | "front" | "purchase" | "utility" | "rule";
   title: string;                                  // "Rent for December"
   legs: Leg[];
   required_approvers: string[];                   // roommate_ids
   approvals: Record<string, "pending" | "yes" | "no">;
   status: "pending" | "approved" | "executed" | "rejected" | "failed";
+  rule?: HouseRule;                               // flow "rule": the rule being voted on; split {} = remove
 };
+type HouseRule = { id: string; bill_type: "rent" | "electric" | "purchase"; split: Record<string, number>; source_text: string; confirmed_by: string[] };
 type TraceEvent = { ts: string; agent: "house" | "personal:alex" | "personal:sam" | "personal:jordan" | "treasurer" | "auditor" | "watcher"; event: string; detail: string };
 
 type HouseState = {
@@ -433,11 +435,13 @@ type HouseState = {
   owes: { from: string; to: string; amount: number; due: string }[];
   proposals: Proposal[];
   trace: TraceEvent[];   // newest first, max 50
+  rules: HouseRule[];    // chat-set house rules (see docs/RULES_AND_PROFILES.md)
 };
 type BankView = {
   bank_name: string; roommate_id: string; name: string; balance: number;
   transactions: { id: string; date: string; description: string; amount: number }[];  // newest first
   scheduled: { date: string; description: string; amount: number }[];
+  profile?: Profile;     // that roommate's private profile ("What your agent knows" card)
 };
 ```
 
@@ -502,6 +506,28 @@ send(reply: Reply) -> None                   # http POSTs to gateway /send; trea
 # Affordability{answers, plan|null}, AuditResult, LLMResult, BankTxn
 ```
 
+**Contract additions (2026-11-08, chat-set rules and personal profiles; full design in [`docs/RULES_AND_PROFILES.md`](docs/RULES_AND_PROFILES.md))**
+
+```python
+# contracts/models.py
+# Flow += "rule"; Proposal.rule: HouseRule | None; HouseState.rules; BankView.profile
+# Preferences{min_buffer, savings_monthly, savings_label, front_cap, notes}   (stated in DM, private)
+# Profile{income_pattern, regular_pay, side_income_monthly, recurring[], spend_trend_pct,
+#         preferences, indicators}                                           (derived, private)
+# CoverAnswer.reason: cushion|savings_goal|upcoming_bills|runway|payday       (DM only, never in Release)
+# store
+house_rules(); save_house_rule(rule); delete_house_rule(bill_type)
+get_preferences(rid) -> Preferences; save_preferences(rid, prefs)
+# indicators.py
+profile(rid) -> Profile          # store history + executed legs (real Nessie ids), workshop metrics
+# tools.py
+split_bill(bill_type, amount, rule=None)   # rule = preview a candidate without saving
+# can_cover: also subtracts recurring charges before the horizon;
+#   floor = max(200, min_buffer) + savings_monthly; ok -> tight when runway_days is risk
+# payday_plan: skips fronters whose front_cap < amount
+# proposals.py: flow "rule" saves/deletes the rule on all-yes and never calls the treasurer
+```
+
 **Behaviors pinned down**
 
 - Rent with fronting is ONE proposal (flow `rent`, all 3 approve): Sam to Alex $800 now, Alex to Maple Court $2,400 now, Jordan to Alex $800 scheduled 2026-12-16.
@@ -525,7 +551,8 @@ send(reply: Reply) -> None                   # http POSTs to gateway /send; trea
 - [ ] **A5. Tools.** `split_bill`, `can_cover`, `payday_plan` (fronter = the roommate with the highest `buffer_after(amount)`, repay = day after the debtor's next payday), `group_affordability` (try 1 month, then 3; pick the first plan where nobody is `no`).
   - Done when: every "expected results" bullet in the contracts section is a passing pytest.
 - [ ] **A6. Demo endpoints logic.** `reset()`, `trigger(event)` (creates the rent or electric proposal through B's `proposals.create`, then pushes the house agent's message), `advance(to)` (sets the clock, calls `treasurer.run_due`).
-- [ ] **A7 (P1). House rules from chat.** Parse "Sam pays 40% of electric" with Grok into a `house_rules` row, then ask the group to confirm.
+- [ ] **A7 (P1). House rules from chat.** Grok parses "Alex has the master, rent is 40/30/30" into a `rule` proposal; everyone approves; it's saved through the Store. See `docs/RULES_AND_PROFILES.md`.
+- [ ] **A9 (P1). Personal profile.** Profile from store history plus executed legs, DM-set preferences, and profile-aware `can_cover` / `payday_plan`. See `docs/RULES_AND_PROFILES.md`.
 - [ ] **A8 (P1). Receipt split.** `split_receipt(image)` using a Grok vision model for line items, then ask who shared which items.
 
 ## Workstream B (Teammate 3, except B3 and B6 for Teammate 2): agents, proposals, auditor, Grok
