@@ -426,7 +426,7 @@ type Proposal = {
   status: "pending" | "approved" | "executed" | "rejected" | "failed";
   rule?: HouseRule;                               // flow "rule": the rule being voted on; split {} = remove
 };
-type HouseRule = { id: string; bill_type: "rent" | "electric" | "purchase"; split: Record<string, number>; source_text: string; confirmed_by: string[] };
+type HouseRule = { id: string; bill_type: string /* "rent" | "electric" */; split: Record<string, number>; source_text: string; confirmed_by: string[] };
 type TraceEvent = { ts: string; agent: "house" | "personal:alex" | "personal:sam" | "personal:jordan" | "treasurer" | "auditor" | "watcher"; event: string; detail: string };
 
 type HouseState = {
@@ -514,7 +514,7 @@ send(reply: Reply) -> None                   # http POSTs to gateway /send; trea
 # Preferences{min_buffer, savings_monthly, savings_label, front_cap, notes}   (stated in DM, private)
 # Profile{income_pattern, regular_pay, side_income_monthly, recurring[], spend_trend_pct,
 #         preferences, indicators}                                           (derived, private)
-# CoverAnswer.reason: cushion|savings_goal|upcoming_bills|runway|payday       (DM only, never in Release)
+# CoverAnswer.reason: cushion|savings_goal|upcoming_bills|runway              (DM only, never in Release)
 # store
 house_rules(); save_house_rule(rule); delete_house_rule(bill_type)
 get_preferences(rid) -> Preferences; save_preferences(rid, prefs)

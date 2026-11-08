@@ -10,7 +10,8 @@ import sys
 import threading
 
 from contracts.models import (
-    Account, ApprovalState, Bill, HouseRule, Leg, PayRule, Proposal, Roommate, TraceEvent, Transaction,
+    Account, ApprovalState, Bill, HouseRule, Leg, PayRule, Preferences, Proposal, Roommate, TraceEvent,
+    Transaction,
 )
 
 from . import config, fixtures
@@ -40,7 +41,10 @@ CREATE TABLE IF NOT EXISTS house_rules (
 );
 CREATE TABLE IF NOT EXISTS proposals (
   id TEXT PRIMARY KEY, seq INTEGER NOT NULL, flow TEXT NOT NULL, title TEXT NOT NULL,
-  status TEXT NOT NULL
+  status TEXT NOT NULL, rule TEXT
+);
+CREATE TABLE IF NOT EXISTS preferences (
+  roommate_id TEXT PRIMARY KEY REFERENCES roommates(id), data TEXT NOT NULL
 );
 CREATE TABLE IF NOT EXISTS legs (
   proposal_id TEXT NOT NULL REFERENCES proposals(id), idx INTEGER NOT NULL, type TEXT NOT NULL,
@@ -57,7 +61,7 @@ CREATE TABLE IF NOT EXISTS trace (
 CREATE TABLE IF NOT EXISTS clock (id INTEGER PRIMARY KEY, today TEXT NOT NULL);
 """
 TABLES = ["approvals", "legs", "proposals", "trace", "transactions", "accounts", "bills",
-          "house_rules", "clock", "roommates"]
+          "house_rules", "clock", "preferences", "roommates"]
 
 
 class SqliteStore:
@@ -70,8 +74,16 @@ class SqliteStore:
         self._db.executescript(SCHEMA)
         # executescript can clear connection pragmas; re-enable after schema apply
         self._db.execute("PRAGMA foreign_keys = ON")
+        self._migrate()
         if self._db.execute("SELECT COUNT(*) FROM clock").fetchone()[0] == 0:
             self.reset()
+
+    def _migrate(self) -> None:
+        """Columns added after a house.db may already exist (CREATE IF NOT EXISTS skips them)."""
+        cols = {r["name"] for r in self._db.execute("PRAGMA table_info(proposals)")}
+        if "rule" not in cols:
+            with self._db:
+                self._db.execute("ALTER TABLE proposals ADD COLUMN rule TEXT")
 
     def _q(self, sql: str, args: tuple = ()) -> list[sqlite3.Row]:
         with self._lock:
@@ -156,9 +168,37 @@ class SqliteStore:
         rows = self._q("SELECT * FROM house_rules WHERE bill_type = ?", (bill_type,))
         if not rows:
             return None
-        r = rows[0]
+        return self._rule(rows[0])
+
+    @staticmethod
+    def _rule(r: sqlite3.Row) -> HouseRule:
         return HouseRule(id=r["id"], bill_type=r["bill_type"], split=json.loads(r["split"]),
                          source_text=r["source_text"], confirmed_by=json.loads(r["confirmed_by"]))
+
+    def house_rules(self) -> list[HouseRule]:
+        return [self._rule(r) for r in self._q("SELECT * FROM house_rules ORDER BY bill_type")]
+
+    def save_house_rule(self, rule: HouseRule) -> None:
+        with self._lock, self._db:
+            self._db.execute("DELETE FROM house_rules WHERE bill_type = ?", (rule.bill_type,))
+            self._db.execute("INSERT INTO house_rules VALUES (?,?,?,?,?)",
+                             (rule.id, rule.bill_type, json.dumps(rule.split), rule.source_text,
+                              json.dumps(rule.confirmed_by)))
+
+    def delete_house_rule(self, bill_type: str) -> None:
+        with self._lock, self._db:
+            self._db.execute("DELETE FROM house_rules WHERE bill_type = ?", (bill_type,))
+
+    def get_preferences(self, rid: str) -> Preferences:
+        self.get_roommate(rid)  # KeyError on unknown rid
+        rows = self._q("SELECT data FROM preferences WHERE roommate_id = ?", (rid,))
+        return Preferences.model_validate_json(rows[0]["data"]) if rows else Preferences()
+
+    def save_preferences(self, rid: str, prefs: Preferences) -> None:
+        self.get_roommate(rid)
+        with self._lock, self._db:
+            self._db.execute("INSERT INTO preferences VALUES (?, ?) ON CONFLICT (roommate_id) "
+                             "DO UPDATE SET data = excluded.data", (rid, prefs.model_dump_json()))
 
     # ----- proposals -----
 
@@ -169,9 +209,10 @@ class SqliteStore:
             seq = existing["seq"] if existing else (
                 self._db.execute("SELECT COALESCE(MAX(seq), 0) + 1 FROM proposals").fetchone()[0])
             self._db.execute(
-                "INSERT INTO proposals (id, seq, flow, title, status) VALUES (?,?,?,?,?) "
+                "INSERT INTO proposals (id, seq, flow, title, status, rule) VALUES (?,?,?,?,?,?) "
                 "ON CONFLICT (id) DO UPDATE SET flow = excluded.flow, title = excluded.title, "
-                "status = excluded.status", (p.id, seq, p.flow, p.title, p.status))
+                "status = excluded.status, rule = excluded.rule",
+                (p.id, seq, p.flow, p.title, p.status, p.rule.model_dump_json() if p.rule else None))
             self._db.execute("DELETE FROM legs WHERE proposal_id = ?", (p.id,))
             self._db.executemany("INSERT INTO legs VALUES (?,?,?,?,?,?,?,?,?,?)", [
                 (p.id, i, l.type, l.from_, l.to, l.payee, l.amount, l.date, l.status, l.nessie_id)
@@ -188,8 +229,10 @@ class SqliteStore:
         appr = self._q("SELECT roommate_id, verdict FROM approvals WHERE proposal_id = ? ORDER BY idx",
                        (row["id"],))
         approvals: dict[str, ApprovalState] = {a["roommate_id"]: a["verdict"] for a in appr}
+        rule = HouseRule.model_validate_json(row["rule"]) if row["rule"] else None
         return Proposal(id=row["id"], flow=row["flow"], title=row["title"], legs=legs,
-                        required_approvers=list(approvals), approvals=approvals, status=row["status"])
+                        required_approvers=list(approvals), approvals=approvals, status=row["status"],
+                        rule=rule)
 
     def get_proposal(self, pid: str) -> Proposal:
         rows = self._q("SELECT * FROM proposals WHERE id = ?", (pid,))

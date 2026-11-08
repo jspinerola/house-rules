@@ -28,12 +28,39 @@ export type Leg = {
 
 export type Proposal = {
   id: string;
-  flow: "rent" | "front" | "purchase" | "utility";
+  flow: "rent" | "front" | "purchase" | "utility" | "rule";
   title: string;
   legs: Leg[];
   required_approvers: string[];
   approvals: Record<string, "pending" | "yes" | "no">;
   status: "pending" | "approved" | "executed" | "rejected" | "failed";
+  rule?: HouseRule | null; // flow "rule": the rule being voted on; split {} means remove it
+};
+
+export type HouseRule = {
+  id: string;
+  bill_type: string; // "rent" | "electric" | "purchase"
+  split: Record<string, number>; // roommate_id -> fraction; the rest split evenly
+  source_text: string; // the reason, e.g. "Alex has the master bedroom"
+  confirmed_by: string[];
+};
+
+export type Preferences = {
+  min_buffer?: number | null;
+  savings_monthly?: number | null;
+  savings_label?: string | null;
+  front_cap?: number | null;
+  notes: string[];
+};
+
+export type Profile = {
+  income_pattern: "steady" | "steady_plus_side" | "irregular";
+  regular_pay: number;
+  side_income_monthly: number;
+  recurring: { name: string; amount: number; next_date: string }[];
+  spend_trend_pct: number;
+  preferences: Preferences;
+  indicators: Record<string, { value: number; status: "good" | "watch" | "risk"; inputs: Record<string, unknown> }>;
 };
 
 export type TraceEvent = {
@@ -49,6 +76,7 @@ export type HouseState = {
   owes: { from: string; to: string; amount: number; due: string }[];
   proposals: Proposal[];
   trace: TraceEvent[];
+  rules: HouseRule[];
 };
 
 export type BankView = {
@@ -58,6 +86,7 @@ export type BankView = {
   balance: number;
   transactions: { id: string; date: string; description: string; amount: number }[];
   scheduled: { date: string; description: string; amount: number }[];
+  profile?: Profile | null;
 };
 
 export type Health = { ok: boolean; llm_mode: string; nessie_mode: string; modes: Record<string, string> };

@@ -1,13 +1,19 @@
 """Returns the expected.json answers; unknown inputs fall back to the nearest scripted case."""
 from __future__ import annotations
 
-from contracts.models import Affordability, CoverAnswer, PaydayPlan, SplitResult
+from contracts.models import Affordability, CoverAnswer, HouseRule, PaydayPlan, SplitResult
 
 from .. import fixtures
 
 
 class StubTools:
-    def split_bill(self, bill_type: str, amount: float) -> SplitResult:
+    def split_bill(self, bill_type: str, amount: float, rule: HouseRule | None = None) -> SplitResult:
+        if rule is not None:  # previewing a candidate rule: same math as the real split
+            ids = list(fixtures.expected().next_payday)
+            fixed = {rid: round(amount * f, 2) for rid, f in rule.split.items()}
+            rest = [rid for rid in ids if rid not in fixed]
+            each = round((amount - sum(fixed.values())) / len(rest), 2) if rest else 0.0
+            return SplitResult(shares={rid: fixed.get(rid, each) for rid in ids})
         for c in fixtures.expected().split_bill:
             if c.bill_type == bill_type:
                 return c.expect.model_copy()

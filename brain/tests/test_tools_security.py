@@ -51,7 +51,7 @@ def test_can_cover_only_uses_that_roommate_balance(tools):
 def test_cover_answer_exposes_no_balances(tools):
     for rid, amount in (("alex", 800), ("jordan", 800), ("jordan", 133.33)):
         dump = tools.can_cover(rid, amount, "2026-11-30").model_dump()
-        assert set(dump) <= {"level", "earliest_date"}
+        assert set(dump) <= {"level", "earliest_date", "reason"}  # reason is a code, never a figure
         blob = repr(dump).lower()
         assert "balance" not in blob and "income" not in blob
         assert "4200" not in blob and "2600" not in blob and "310" not in blob

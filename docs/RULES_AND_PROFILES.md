@@ -1,8 +1,9 @@
 # House rules from chat + personal profiles from bank data
 
-Status: **design, approved 2026-11-08, not built yet.** This is a contract change: it adds fields
-and methods to `contracts/` (see [Contract changes](#contract-changes)). Per AGENTS.md, the team
-reads this before anyone builds against it.
+Status: **built 2026-11-08** on `feat/rules-and-profiles`. Rent and electric rules work; purchase
+rules are not built yet (see Build order). This is a contract change: it adds fields and methods
+to `contracts/` (see [Contract changes](#contract-changes)). Per AGENTS.md, the team reads this
+before building against it.
 
 Owners follow AGENTS.md: Store, indicators, tools and `wellness/` are **A**; agents and proposals
 are **B**; dashboard and bank app are **D**.
@@ -68,8 +69,9 @@ rent split" removes the rule through the same yes-from-everyone path.
 7. **Remove.** `remove_rule(bill)` creates a `rule` proposal with `rule.split = {}`. On approval
    it deletes the row.
 
-Supported bill types: `rent`, `electric`, and `purchase`. `purchase` is the default split for
-shared buys; with it set, the couch plan uses the rule's shares instead of an even split.
+Supported bill types: `rent` and `electric`. **Not built yet:** `purchase` (a default split for
+shared buys). It needs per-share affordability in `group_affordability`, so it was cut first, as
+planned.
 
 ### Where it shows
 
@@ -167,7 +169,7 @@ earliest_date: as today, with recurring charges included
   those whose `front_cap` is unset or at least the amount. If nobody qualifies, the house says no
   one can front it and offers a split-pay instead of fronting.
 - **`Release` is unchanged** (`{level, earliest_date}`), so nothing new reaches the house. A
-  separate `CoverAnswer.reason` (`cushion`, `savings_goal`, `upcoming_bills`, `runway`, `payday`)
+  separate `CoverAnswer.reason` (`cushion`, `savings_goal`, `upcoming_bills`, `runway`; a `no` already carries its `earliest_date`)
   is used only in the roommate's own DM explanation.
 
 ### Locked results still hold (checked by hand against the seed; tests lock them)
@@ -249,7 +251,7 @@ class Profile(_Model):
 class CoverAnswer(_Model):
     level: Level
     earliest_date: str | None = None
-    reason: Literal["cushion", "savings_goal", "upcoming_bills", "runway", "payday"] | None = None
+    reason: Literal["cushion", "savings_goal", "upcoming_bills", "runway"] | None = None
 
 class HouseState(_Model):
     ...

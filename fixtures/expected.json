@@ -172,7 +172,7 @@
     "inputs": {}
    },
    "housing_cost_ratio": {
-    "value": 0.0,
+    "value": 0.1379,
     "status": "good",
     "inputs": {}
    },
@@ -236,7 +236,7 @@
     "inputs": {}
    },
    "housing_cost_ratio": {
-    "value": 0.0,
+    "value": 0.1943,
     "status": "good",
     "inputs": {}
    },
@@ -300,8 +300,8 @@
     "inputs": {}
    },
    "housing_cost_ratio": {
-    "value": 0.0,
-    "status": "good",
+    "value": 0.4571,
+    "status": "risk",
     "inputs": {}
    },
    "liquidity_ratio": {

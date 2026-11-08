@@ -52,7 +52,8 @@ class Outcome:
     text: str = ""
     replies: list[Reply] | None = None
     allowed: set[float] = field(default_factory=set)
-    tools_used: list[str] = field(default_factory=list)
+    tools_used: list[str] = field(default_factory=list)  # calls that ran
+    tools_tried: list[str] = field(default_factory=list)  # every call the model made, failed ones too
     messages: list[dict] = field(default_factory=list)
 
 
@@ -94,6 +95,7 @@ def run(agent: str, system: str, user: str, tools: list[AgentTool]) -> Outcome:
         for call in result.tool_calls[:MAX_CALLS_PER_STEP]:
             tool = by_name.get(call.name)
             trace.log(agent, "tool", f"{call.name}({json.dumps(call.args)[:80]})")
+            out.tools_tried.append(call.name)
             if tool is None:
                 results.append({"tool": call.name, "error": "unknown tool"})
                 continue
@@ -122,7 +124,7 @@ def run(agent: str, system: str, user: str, tools: list[AgentTool]) -> Outcome:
 def silent(out: Outcome) -> bool:
     """True when the LLM used no tool and gave no real answer: stub mode, or Grok down and the
     adapter fell back to StubLLM's hello script. Callers then use their keyword/scripted path."""
-    return out.replies is None and not out.tools_used and out.text in ("", fixtures.expected().scripts.hello_group)
+    return out.replies is None and not out.tools_tried and out.text in ("", fixtures.expected().scripts.hello_group)
 
 
 def checked(agent: str, out: Outcome, audience: str, extra_allowed: set[float] = frozenset()) -> str | None:

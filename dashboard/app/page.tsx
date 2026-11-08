@@ -2,6 +2,7 @@
 // House view for the projector: polls GET /state every 2 s. Press "d" for presenter controls.
 import { useCallback, useMemo } from "react";
 import type { HouseState } from "../../contracts/types";
+import { HouseRules } from "./components/HouseRules";
 import { HouseThread } from "./components/HouseThread";
 import { PresenterBar } from "./components/PresenterBar";
 import { Proposals } from "./components/Proposals";
@@ -52,7 +53,10 @@ export default function Page() {
         <p className="m-auto font-mono text-2xl text-fog">{error ? "brain unreachable" : "loading /state …"}</p>
       ) : (
         <div className="grid min-h-0 flex-1 grid-cols-1 gap-5 lg:grid-cols-3">
-          <Roommates state={state} name={name} />
+          <div className="grid min-h-0 gap-5 lg:grid-rows-[3fr_2fr]">
+            <Roommates state={state} name={name} />
+            <HouseRules rules={state.rules ?? []} ids={state.roommates.map((r) => r.id)} name={name} />
+          </div>
           <Proposals proposals={state.proposals} today={state.today} name={name} />
           <div className="grid min-h-0 gap-5 lg:grid-rows-[3fr_2fr]">
             <Trace trace={state.trace} />

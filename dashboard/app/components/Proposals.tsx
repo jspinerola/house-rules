@@ -1,6 +1,7 @@
 "use client";
 import type { Leg, Proposal } from "../../../contracts/types";
 import { money } from "../lib/brain";
+import { RuleSplit } from "./HouseRules";
 import { Empty, Panel, StatusBadge } from "./ui";
 
 const VOTE = {
@@ -46,6 +47,7 @@ function LegRow({ leg, today, name }: { leg: Leg; today: string; name: (id: stri
 }
 
 function ProposalCard({ p, today, name }: { p: Proposal; today: string; name: (id: string) => string }) {
+  const rule = p.rule ?? null;
   return (
     <li className="animate-rise rounded-xl border border-line bg-panel-2/70 px-5 py-4">
       <div className="flex items-start justify-between gap-3">
@@ -69,6 +71,12 @@ function ProposalCard({ p, today, name }: { p: Proposal; today: string; name: (i
       <ul className="mt-3">
         {p.legs.map((leg, i) => <LegRow key={i} leg={leg} today={today} name={name} />)}
       </ul>
+      {rule && (
+        <div className="mt-3 border-t border-line/60 pt-3">
+          <p className="mb-2 text-base text-fog">“{rule.source_text}” · no money moves</p>
+          <RuleSplit rule={rule} ids={p.required_approvers} name={name} />
+        </div>
+      )}
     </li>
   );
 }

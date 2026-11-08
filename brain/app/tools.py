@@ -1,8 +1,11 @@
 """Specialist tools the house agent calls (TOOLS_MODE=real). Pure code, no LLM.
 
-Rules (REQUIREMENTS M3):
-  can_cover: ok = balance stays >= $200 until next payday; tight = stays >= $0; no = goes negative.
-  payday_plan: fronter = roommate with the highest buffer_after(amount); repay = day after payday.
+Rules (REQUIREMENTS M3, docs/RULES_AND_PROFILES.md):
+  can_cover: cash at the next payday also subtracts that roommate's recurring charges due before it.
+    ok = cash >= max($200, min_buffer) + savings_monthly; tight = >= $0; no = negative.
+    ok drops to tight when runway_days is "risk". `reason` (DM-only) says what made it not ok.
+  payday_plan: fronter = roommate with the highest buffer_after(amount) whose front_cap allows it;
+    repay = day after payday.
   group_affordability: try each months option in order; first plan where nobody is "no" wins.
 """
 from __future__ import annotations
@@ -10,7 +13,10 @@ from __future__ import annotations
 import math
 from datetime import date, timedelta
 
-from contracts.models import Affordability, AffordPlan, CoverAnswer, Level, PaydayPlan, SplitResult
+from contracts.models import (
+    Affordability, AffordPlan, CoverAnswer, CoverReason, HouseRule, Level, PaydayPlan, SplitResult,
+)
+from wellness import patterns
 
 from . import registry
 
@@ -63,6 +69,12 @@ class Tools:
             for leg in p.legs if leg.status == "pending" and leg.from_ == rid and leg.date <= until
         ), 2)
 
+    def _recurring_until(self, rid: str, until: str) -> float:
+        """Recurring personal charges (subscriptions, phone) due after today, on or before `until`."""
+        store = registry.get("store")
+        prof = registry.get("indicators").profile(rid)
+        return patterns.due_between([r.model_dump() for r in prof.recurring], store.today(), until)
+
     def _projection(self, rid: str, amount: float, by: str) -> tuple[float, str]:
         """Cash left at the next payday after `by`, crediting paydays up to `by`."""
         store = registry.get("store")
@@ -76,18 +88,18 @@ class Tools:
             d = self.next_payday(rid, d)
         if d is None:
             raise ValueError(f"no next payday horizon for {rid!r}")
-        return round(cash - self._committed_out(rid, d), 2), d
+        return round(cash - self._committed_out(rid, d) - self._recurring_until(rid, d), 2), d
 
     def buffer_after(self, rid: str, amount: float) -> float:
         return self._projection(rid, amount, registry.get("store").today())[0]
 
     # ----- protocol -----
 
-    def split_bill(self, bill_type: str, amount: float) -> SplitResult:
+    def split_bill(self, bill_type: str, amount: float, rule: HouseRule | None = None) -> SplitResult:
         amount = _money(amount)
         store = registry.get("store")
         ids = [r.id for r in store.roommates()]
-        rule = store.house_rule(bill_type)
+        rule = rule if rule is not None else store.house_rule(bill_type)
         fixed = {rid: round(amount * frac, 2) for rid, frac in (rule.split if rule else {}).items()}
         rest = [rid for rid in ids if rid not in fixed]
         each = round((amount - sum(fixed.values())) / len(rest), 2) if rest else 0.0
@@ -98,9 +110,19 @@ class Tools:
 
     def can_cover(self, rid: str, amount: float, date: str) -> CoverAnswer:
         cash, horizon = self._projection(rid, amount, date)
-        level: Level = "ok" if cash >= OK_FLOOR else "tight" if cash >= 0 else "no"
+        prefs = registry.get("store").get_preferences(rid)
+        cushion = max(OK_FLOOR, prefs.min_buffer or 0.0)
+        floor = cushion + (prefs.savings_monthly or 0.0)
+        level: Level = "ok" if cash >= floor else "tight" if cash >= 0 else "no"
+        reason: CoverReason | None = None
+        if level == "tight":
+            reason = ("savings_goal" if cash >= cushion else "cushion" if cash >= OK_FLOOR
+                      else "upcoming_bills" if cash + self._recurring_until(rid, horizon) >= OK_FLOOR
+                      else None)
+        if level == "ok" and registry.get("indicators").compute(rid)["runway_days"].status == "risk":
+            level, reason = "tight", "runway"
         if level != "no":
-            return CoverAnswer(level=level)
+            return CoverAnswer(level=level, reason=reason)
         pay = registry.get("store").get_roommate(rid).pay
         d = horizon
         for _ in range(MAX_PAYDAYS_AHEAD):
@@ -116,7 +138,11 @@ class Tools:
         amount = _money(amount)
         store = registry.get("store")
         store.get_roommate(rid)  # KeyError on unknown rid
-        others = [r.id for r in store.roommates() if r.id != rid]
+        others = [r.id for r in store.roommates() if r.id != rid
+                  and (store.get_preferences(r.id).front_cap is None
+                       or store.get_preferences(r.id).front_cap >= amount)]
+        if not others:
+            raise ValueError(f"nobody can front {amount:.2f}: every roommate's front cap is lower")
         fronter = max(others, key=lambda o: self.buffer_after(o, amount))
         payday = self.next_payday(rid, store.today())
         if not payday:

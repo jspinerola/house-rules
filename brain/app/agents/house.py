@@ -12,7 +12,7 @@ import re
 from collections import deque
 from datetime import date, timedelta
 
-from contracts.models import Ask, DemoEvent, GroupTarget, Leg, Proposal, Release, Reply
+from contracts.models import Ask, DemoEvent, GroupTarget, HouseRule, Leg, Proposal, Release, Reply
 
 from .. import fixtures, registry, trace
 from ..fmt import money
@@ -23,12 +23,15 @@ from .voice import PERSONAS, RULES, speak
 
 BILL_FLOWS = {"rent_due": ("rent", "rent"), "electric_bill": ("electric", "utility")}
 BILL_EVENTS = {"rent": "rent_due", "electric": "electric_bill"}
+BILL_FLOW = {bill: flow for bill, flow in BILL_FLOWS.values()}  # "rent" -> "rent", "electric" -> "utility"
 
 # The LLM picks tools and explains; code does every number (AGENTS.md).
 AGENT = """You run the house's money in this group chat. Use tools for every fact or number; never
 do arithmetic yourself (no rounding, no totals), quote tool numbers exactly:
 - house_status for bills, due dates, house rules, pending proposals, who owes whom.
 - split_bill / what_if_purchase / can_cover to look things up without committing to anything.
+- propose_rule when roommates agree on how a bill should be split and why ("Alex has the master,
+  rent 40/30/30"); remove_rule to go back to an even split. Both post a vote, so call and stop.
 - start_bill or group_affordability ONLY when the roommates want to actually set up a bill payment
   or purchase; those post the proposal themselves, so call them and stop.
 Never say you'll check or set something up: call the tool in this same turn.
@@ -120,8 +123,9 @@ class HouseAgent:
         trace.log("house", "asked", f"ask_personal {rid}: {purpose} {money(amount)} by {by}")
         return registry.get("personal").ask(rid, Ask(amount=amount, by_date=by, purpose=purpose))
 
-    def _create(self, flow: str, title: str, legs: list[Leg], approvers: list[str]) -> Proposal:
-        return registry.get("proposals").create(flow, title, legs, approvers)
+    def _create(self, flow: str, title: str, legs: list[Leg], approvers: list[str],
+                rule: HouseRule | None = None) -> Proposal:
+        return registry.get("proposals").create(flow, title, legs, approvers, rule=rule)
 
     # ----- bills (rent day, utilities) -----
 
@@ -143,7 +147,14 @@ class HouseAgent:
             if releases[rid].level != "no":
                 now.append(Leg(type="transfer", **{"from": rid}, to=bill.payer, amount=amt, date=today))
                 continue
-            plan = tools.payday_plan(rid, amt)
+            try:
+                plan = tools.payday_plan(rid, amt)
+            except ValueError:  # every possible fronter capped their fronting below this share
+                trace.log("house", "no_fronter", f"{rid} {money(amt)} {bill_type}")
+                draft = (f"{names[rid]} can't cover their {money(amt)} {bill_type} share until "
+                         f"{releases[rid].earliest_date or 'their next payday'}, and nobody is set up to "
+                         f"front it right now. Want to hold the {bill_type} until then?")
+                return [self._say(flow, draft, {amt})]
             if plan.fronter != bill.payer:
                 now.append(Leg(type="transfer", **{"from": plan.fronter}, to=bill.payer, amount=amt, date=today))
             later.append(Leg(type="scheduled_transfer", **{"from": rid}, to=plan.fronter, amount=amt,
@@ -332,8 +343,9 @@ class HouseAgent:
                 bills.append({"bill": bill, "amount": b.amount, "due": b.due, "payer": names[b.payer],
                               "shares": {names[r]: a for r, a in shares.items()},
                               "payee": b.payee,
-                              "house_rule": {names[r]: f"{f:.0%}" for r, f in rule.split.items()} if rule
-                              else "split evenly"})
+                              "house_rule": ({"split": {names[r]: f"{f:.0%}" for r, f in rule.split.items()},
+                                              "reason": rule.source_text, "rest": "split evenly"}
+                                             if rule else "split evenly")})
             proposals = [{"title": pr.title, "status": pr.status,
                           "approved": [names[r] for r, v in pr.approvals.items() if v == "yes"],
                           "waiting_on": [names[r] for r, v in pr.approvals.items() if v == "pending"]}
@@ -370,6 +382,64 @@ class HouseAgent:
             rel = self._ask_personal(rid, float(amount), by, str(args.get("purpose") or "question"))
             return ToolOutput({"roommate": names[rid], "level": rel.level, "earliest_date": rel.earliest_date})
 
+        def shares_of(args: dict) -> dict[str, float]:
+            raw = args.get("shares")
+            if not isinstance(raw, dict) or not raw:
+                raise ValueError("shares must map roommate names to percents, e.g. {\"Alex\": 40}")
+            split: dict[str, float] = {}
+            for who, pct in raw.items():
+                if not isinstance(pct, (int, float)) or isinstance(pct, bool) or not 0 <= pct <= 100:
+                    raise ValueError(f"{who}'s share must be a percent from 0 to 100")
+                split[rid_of(who)] = round(float(pct) / 100, 4)
+            total = sum(split.values())
+            if total > 1.0001:
+                raise ValueError(f"shares add up to {total * 100:g}%, more than 100%")
+            if len(split) == len(names) and abs(total - 1) > 0.0001:
+                raise ValueError(f"everyone is listed, so shares must add up to 100%, not {total * 100:g}%")
+            if len(split) == len(names):  # keep one roommate implicit so rounding cents land somewhere
+                split.pop(min(split, key=split.get))
+            return split
+
+        def vote_open(bill: str) -> None:
+            if any(pr.flow == "rule" and pr.status == "pending" and pr.rule and pr.rule.bill_type == bill
+                   for pr in store.proposals()):
+                raise ValueError(f"there's already a {bill} rule vote open; wait for it to finish")
+
+        def rule_vote(bill: str, rule: HouseRule, title: str, lead: str) -> ToolOutput:
+            amount = store.bill(bill).amount
+            preview = tools.split_bill(bill, amount, rule=rule).shares
+            p = self._create("rule", title, [], list(names), rule)
+            split = ", ".join(f"{names[r]} {money(a)}" for r, a in preview.items())
+            draft = f"{lead} {bill} would be {split}. Everyone reply yes to make it the house rule."
+            flow = BILL_FLOW[bill]
+            if any(pr.flow == flow and pr.status == "pending" for pr in store.proposals()):
+                draft += f" The {bill} proposal already out keeps its current split."
+            allowed = set(preview.values()) | {amount} | {round(f * 100, 2) for f in rule.split.values()}
+            return ToolOutput({"proposal": p.id}, [self._say("rule", draft, allowed)])
+
+        def propose_rule(args: dict) -> ToolOutput:
+            bill = bill_of(args)
+            vote_open(bill)
+            split = shares_of(args)
+            reason = str(args.get("reason") or "").strip()[:120] or "the house agreed"
+            current = store.house_rule(bill)
+            if current and current.split == split:
+                raise ValueError(f"that is already the {bill} rule")
+            rule = HouseRule(id=f"rule-{bill}", bill_type=bill, split=split, source_text=reason)
+            rest = [r for r in names if r not in split]
+            even = (1 - sum(split.values())) / len(rest) if rest else 0.0
+            pcts = ", ".join(f"{names[r]} {split.get(r, even) * 100:g}%" for r in names)
+            return rule_vote(bill, rule, f"House rule: {bill} split {pcts}", f"With {reason},")
+
+        def remove_rule(args: dict) -> ToolOutput:
+            bill = bill_of(args)
+            vote_open(bill)
+            current = store.house_rule(bill)
+            if current is None:
+                raise ValueError(f"{bill} is already split evenly")
+            rule = HouseRule(id=current.id, bill_type=bill, split={}, source_text="back to an even split")
+            return rule_vote(bill, rule, f"House rule: {bill} back to an even split", "Going back to even,")
+
         def start_bill(args: dict) -> ToolOutput:
             bill = bill_of(args)
             return ToolOutput({"started": bill}, self._start_bill(bill))
@@ -399,6 +469,16 @@ class HouseAgent:
                       {"roommate": {"type": "string"}, "amount": {"type": "number"},
                        "by_date": {"type": "string", "description": "YYYY-MM-DD, default today."},
                        "purpose": {"type": "string"}}, can_cover, ("roommate", "amount")),
+            AgentTool("propose_rule", "ACTION: put a house rule to a vote: how a bill is split and why. "
+                      "Unlisted roommates split the rest evenly. Posts a preview of the dollar split.",
+                      bill_param | {"shares": {"type": "object", "description": "Roommate name -> percent, "
+                                               "e.g. {\"Alex\": 40, \"Sam\": 30, \"Jordan\": 30}.",
+                                               "additionalProperties": {"type": "number"}},
+                                    "reason": {"type": "string", "description": "Why, in their words, e.g. "
+                                               "Alex has the master bedroom."}},
+                      propose_rule, ("bill", "shares")),
+            AgentTool("remove_rule", "ACTION: put going back to an even split of a bill to a vote.",
+                      bill_param, remove_rule, ("bill",)),
             AgentTool("start_bill", "ACTION: split the bill, ask personal agents, and post the payment "
                       "proposal (with any payday fronting) for approval.", bill_param, start_bill, ("bill",)),
             AgentTool("group_affordability", "ACTION: propose buying something together. Picks the plan "

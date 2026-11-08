@@ -80,7 +80,7 @@
 
 ---
 
-### Slide 5b: Demo Scene 3: The House Learns Its People (planned, A7 + A9; see `docs/RULES_AND_PROFILES.md`)
+### Slide 5b: Demo Scene 3: The House Learns Its People (A7 + A9; see `docs/RULES_AND_PROFILES.md`)
 * **Header:** Rules you set, a profile it learns
 * **Visual:**
   1. Alex in the group: *"alex has the master, rent should be 40/30/30"*. House: *"Rent would be Alex \$960, Sam \$720, Jordan \$720. Everyone reply yes to make it a house rule."* Three yeses later, the House rules card on the dashboard updates.
