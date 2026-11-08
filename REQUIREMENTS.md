@@ -28,7 +28,8 @@ The foundation commit and P0 skeleton are merged to `main` (PR #2, CI green).
 | M7 Personal agent, M8 House agent | P0 skeleton done (code + stub wording); Grok open |
 | M10 Treasurer | P0 done |
 | M11 Brain API | Done: route shape tests, JSON errors, env CORS, `/health` modes (`m11-api`) |
-| M12 Gateway, M13 Bank app, M14 Dashboard | Sim mode and unstyled versions done |
+| M12 Gateway, M14 Dashboard | Sim mode and unstyled versions done |
+| M13 Bank app | Done: styled account screen, animated balance and rows, Metro `/brain` proxy over the Expo tunnel (PR #6) |
 | M16 Outbox http | Done in brain (gateway down -> JSON 502); REPL check with the sim gateway open |
 | M6 LLM (Grok), M9 Nessie live, M15 CI + Grok Bot | Open |
 
@@ -36,7 +37,7 @@ The foundation commit and P0 skeleton are merged to `main` (PR #2, CI green).
 
 - **Teammate 2:** Tiger Data (M1 P1), hardening indicators, tools and auditor (M2, M3, M5), dashboard styling (D6 / M14), chat-set house rules (A7 / M8 P1).
 - **Teammate 3:** Photon gateway (C2–C7 / M12), switching agents to Grok wording and tool calls (B2, B4 / M6, M8), the watcher (B8), a LangGraph house graph if wanted.
-- **Xander:** live Nessie (D2 / M9), bank app styling (D5 / M13), Grok Bot secrets in CI (D7 / M15), Devpost (D8).
+- **Xander:** live Nessie (D2 / M9), Grok Bot secrets in CI (D7 / M15), Devpost (D8).
 
 ## How nobody waits on another branch
 
@@ -203,7 +204,7 @@ Each module lists its interface (in `contracts/interfaces.py`), what its stub do
 ### M13. Bank app (Expo)
 
 - **Reads:** `GET /bank/{rid}` every 2 s.
-- **P0:** roommate picker, then an account screen with balance, scheduled payments and transactions (newest first). Styled after the Capital One mobile app for the Capital One demo, with a "Demo: Nessie sandbox data" banner, no login fields, and Expo Go only. A new transaction slides in and the balance animates.
+- **P0:** roommate picker, then an account screen with balance, scheduled payments and transactions (newest first). Styled after the Capital One mobile app for the Capital One demo, with no login fields, and Expo Go only. A new transaction slides in and the balance animates.
 - **Done when:** against the stub brain, `POST /demo/trigger` plus 3 stub yeses visibly change Alex's screen within 3 s.
 
 ### M14. House view dashboard (Next.js)
