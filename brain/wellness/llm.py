@@ -71,23 +71,36 @@ def get_llm(spec="mock"):
 
 
 class GrokLLM:
-    """House Rules addition: xAI Grok via its OpenAI-compatible endpoint, with tool calling.
+    """House Rules addition: xAI Grok via the OpenAI SDK, with tool calling.
 
-    Returns the raw assistant message dict ({"content", "tool_calls"}). Needs XAI_API_KEY.
+    Returns a plain assistant message dict ({"content", "tool_calls"}). Needs XAI_API_KEY.
     """
 
     def __init__(self, model=None, base_url="https://api.x.ai/v1", timeout=8):
+        from openai import OpenAI
+
         self.model = model or os.environ.get("GROK_MODEL", "")
         if not self.model:
             raise ValueError("GROK_MODEL is not set")
+        key = os.environ.get("XAI_API_KEY")
+        if not key:
+            raise ValueError("XAI_API_KEY is not set")
         self.name, self.base_url, self.timeout = f"grok:{self.model}", base_url, timeout
+        self._client = OpenAI(api_key=key, base_url=base_url, timeout=timeout)
 
     def chat(self, messages, tools=None):
-        key = os.environ["XAI_API_KEY"]
-        body = {"model": self.model, "messages": messages}
+        kwargs = {"model": self.model, "messages": messages}
         if tools:
-            body["tools"] = tools
-        req = urllib.request.Request(f"{self.base_url}/chat/completions", json.dumps(body).encode(),
-                                     {"Content-Type": "application/json", "Authorization": "Bearer " + key})
-        with urllib.request.urlopen(req, timeout=self.timeout) as r:
-            return json.load(r)["choices"][0]["message"]
+            kwargs["tools"] = tools
+        msg = self._client.chat.completions.create(**kwargs).choices[0].message
+        tool_calls = None
+        if msg.tool_calls:
+            tool_calls = [{
+                "id": tc.id,
+                "type": "function",
+                "function": {
+                    "name": tc.function.name,
+                    "arguments": tc.function.arguments or "{}",
+                },
+            } for tc in msg.tool_calls]
+        return {"content": msg.content, "tool_calls": tool_calls}
