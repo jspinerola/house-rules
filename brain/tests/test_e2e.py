@@ -56,8 +56,10 @@ def rent_day(c: TestClient) -> dict:
     sent = outbox()
     group = [r for r in sent if r["target"]["type"] == "group"]
     dms = [r for r in sent if r["target"] == {"type": "dm", "roommate_id": "jordan"}]
+    alex_dms = [r for r in sent if r["target"] == {"type": "dm", "roommate_id": "alex"}]
     assert group and "$800" in group[0]["text"] and "$2,400" in group[0]["text"]
     assert dms and "Alex" in dms[0]["text"]  # Jordan hears about fronting privately
+    assert alex_dms and "Jordan" in alex_dms[0]["text"]  # Alex hears about fronting privately
     [p] = c.get("/state").json()["proposals"]
     assert p["flow"] == "rent" and p["status"] == "pending"
     return p
