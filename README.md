@@ -96,7 +96,7 @@ cd brain && OUTBOX_MODE=http uvicorn app.main:app --port 8000
 cd gateway && npm i && npm run dev
 # optional
 cd dashboard && npm i && npm run dev            # http://localhost:3000
-cd bank-app && npm i && EXPO_PUBLIC_BRAIN_URL=http://<laptop-ip>:8000 npx expo start --tunnel
+cd bank-app && npm i && npx expo start --tunnel ngrok   # phone reaches the brain via Metro's /brain proxy
 ```
 
 Rent day in the sim REPL:
