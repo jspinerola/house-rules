@@ -14,7 +14,7 @@ export function brainBase(): string {
   const hostUri = Constants.expoConfig?.hostUri;
   if (!hostUri) return 'http://localhost:8000';
   const host = hostUri.split('/')[0];
-  const tunnel = host.endsWith('.exp.direct') || host.includes('ngrok');
+  const tunnel = host.endsWith('.exp.direct') || host.endsWith('.on.expo.app') || host.includes('ngrok');
   return `${tunnel ? 'https' : 'http'}://${host}/brain`;
 }
 
